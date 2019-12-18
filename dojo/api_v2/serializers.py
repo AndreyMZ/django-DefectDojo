@@ -405,6 +405,7 @@ class FindingSerializer(TaggitSerializer, serializers.ModelSerializer):
     tags = TagListSerializerField(required=False)
     accepted_risks = RiskAcceptanceSerializer(many=True, read_only=True, source='risk_acceptance_set')
     push_to_jira = serializers.BooleanField(default=False)
+    duplicate_finding = serializers.PrimaryKeyRelatedField(queryset=Finding.objects.all(), allow_null=True)
 
     class Meta:
         model = Finding
@@ -447,6 +448,7 @@ class FindingCreateSerializer(TaggitSerializer, serializers.ModelSerializer):
     found_by = serializers.PrimaryKeyRelatedField(
         queryset=Test_Type.objects.all(),
         many=True)
+    duplicate_finding = serializers.PrimaryKeyRelatedField(queryset=Finding.objects.all(), allow_null=True)
     url = serializers.CharField(
         allow_null=True,
         default=None)
