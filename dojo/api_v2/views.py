@@ -153,11 +153,25 @@ class FindingViewSet(mixins.ListModelMixin,
     serializer_class = serializers.FindingSerializer
     queryset = Finding.objects.all()
     filter_backends = (DjangoFilterBackend,)
-    filter_fields = ('id', 'title', 'date', 'severity', 'description',
-                     'mitigated', 'endpoints', 'test', 'active', 'verified',
-                     'false_p', 'reporter', 'url', 'out_of_scope',
-                     'duplicate', 'test__engagement__product',
-                     'test__engagement')
+    filter_fields = {
+        'id': ['exact'],
+        'title': ['exact'],
+        'date': ['exact'],
+        'severity': ['exact'],
+        'description': ['exact'],
+        'mitigated': ['exact'],
+        'endpoints': ['exact'],
+        'test': ['exact'],
+        'active': ['exact'],
+        'verified': ['exact'],
+        'false_p': ['exact'],
+        'reporter': ['exact'],
+        'url': ['exact'],
+        'out_of_scope': ['exact'],
+        'duplicate': ['exact'],
+        'test__engagement__product': ['exact'],
+        'test__engagement': ['exact'],
+    }
 
     # Overriding mixins.UpdateModeMixin perform_update() method to grab push_to_jira
     # data and add that as a parameter to .save()
