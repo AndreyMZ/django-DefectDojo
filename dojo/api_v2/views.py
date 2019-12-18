@@ -171,6 +171,9 @@ class FindingViewSet(mixins.ListModelMixin,
         'duplicate': ['exact'],
         'test__engagement__product': ['exact'],
         'test__engagement': ['exact'],
+        'test__test_type': ['exact'],
+        'unique_id_from_tool': ['exact'],
+        'hash_code': ['exact'],
     }
 
     # Overriding mixins.UpdateModeMixin perform_update() method to grab push_to_jira
