@@ -394,6 +394,7 @@ class FindingImageSerializer(serializers.ModelSerializer):
 class FindingSerializer(TaggitSerializer, serializers.ModelSerializer):
     images = FindingImageSerializer(many=True, read_only=True)
     tags = TagListSerializerField(required=False)
+    duplicate_finding = serializers.PrimaryKeyRelatedField(queryset=Finding.objects.all(), allow_null=True)
 
     class Meta:
         model = Finding
@@ -431,6 +432,7 @@ class FindingCreateSerializer(TaggitSerializer, serializers.ModelSerializer):
     found_by = serializers.PrimaryKeyRelatedField(
         queryset=Test_Type.objects.all(),
         many=True)
+    duplicate_finding = serializers.PrimaryKeyRelatedField(queryset=Finding.objects.all(), allow_null=True)
     url = serializers.CharField(
         allow_null=True,
         default=None)
