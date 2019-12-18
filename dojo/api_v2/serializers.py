@@ -746,6 +746,7 @@ class FindingSerializer(TaggitSerializer, serializers.ModelSerializer):
     sla_days_remaining = serializers.IntegerField(read_only=True)
     finding_meta = FindingMetaSerializer(read_only=True, many=True)
     related_fields = serializers.SerializerMethodField()
+    duplicate_finding = serializers.PrimaryKeyRelatedField(queryset=Finding.objects.all(), allow_null=True)
     # for backwards compatibility
     jira_creation = serializers.SerializerMethodField(read_only=True)
     jira_change = serializers.SerializerMethodField(read_only=True)
@@ -849,6 +850,7 @@ class FindingCreateSerializer(TaggitSerializer, serializers.ModelSerializer):
     found_by = serializers.PrimaryKeyRelatedField(
         queryset=Test_Type.objects.all(),
         many=True)
+    duplicate_finding = serializers.PrimaryKeyRelatedField(queryset=Finding.objects.all(), allow_null=True)
     url = serializers.CharField(
         allow_null=True,
         default=None)
