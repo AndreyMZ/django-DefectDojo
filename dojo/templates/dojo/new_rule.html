@@ -33,9 +33,9 @@
         $('#id_match_field).empty();
         $('.dropdown-toggle').click(function() { get_alerts(); });
 
-        setInterval(function() {
+        setTimeout(function() {
             update_alertcount();
-        }, 10000);
+        }, 0);
 
         function update_alertcount() {
             $.get("/alerts/count", function (data) {
