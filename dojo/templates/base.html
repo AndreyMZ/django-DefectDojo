@@ -594,9 +594,9 @@
         $('.has-popover').popover({'trigger':'hover'});
         {% if request.user.is_authenticated %}
         $('.dropdown-toggle').click(function() { get_alerts(); });
-        setInterval(function() {
+        setTimeout(function() {
             update_alertcount();
-        }, 10000);
+        }, 0);
         {% endif %}
         function update_alertcount() {
             $.get("{% url 'alertcount' %}", function (data) {
