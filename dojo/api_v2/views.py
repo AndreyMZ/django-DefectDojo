@@ -252,7 +252,7 @@ class FindingViewSet(mixins.ListModelMixin,
                      ra_api.AcceptedFindingsMixin,
                      viewsets.GenericViewSet):
     serializer_class = serializers.FindingSerializer
-    queryset = Finding.objects.all()
+    queryset = Finding.objects.none()
     filter_backends = (DjangoFilterBackend,)
     filterset_class = ApiFindingFilter
 
@@ -734,7 +734,7 @@ class StubFindingsViewSet(mixins.ListModelMixin,
                           mixins.UpdateModelMixin,
                           viewsets.GenericViewSet):
     serializer_class = serializers.StubFindingSerializer
-    queryset = Stub_Finding.objects.all()
+    queryset = Stub_Finding.objects.none()
     filter_backends = (DjangoFilterBackend,)
     filter_fields = ('id', 'title', 'date', 'severity', 'description')
 
