@@ -29,7 +29,7 @@ from itertools import chain
 
 from dojo.filters import OpenFindingFilter, \
     OpenFingingSuperFilter, AcceptedFingingSuperFilter, \
-    ClosedFingingSuperFilter, TemplateFindingFilter
+    ClosedFingingSuperFilter, TemplateFindingFilter, AcceptedFindingFilter, ClosedFindingFilter
 from dojo.forms import NoteForm, FindingNoteForm, CloseFindingForm, FindingForm, PromoteFindingForm, FindingTemplateForm, \
     DeleteFindingTemplateForm, FindingImageFormSet, JIRAFindingForm, GITHUBFindingForm, ReviewFindingForm, ClearFindingReviewForm, \
     DefectFindingForm, StubFindingForm, DeleteFindingForm, DeleteStubFindingForm, ApplyFindingTemplateForm, \
@@ -516,7 +516,7 @@ def open_findings(request, pid=None, eid=None, view=None):
 
     if not request.user.is_staff:
         findings = findings.filter(
-            test__engagement__product__authorized_users__in=[request.user])
+            test__engagement__product__authorized_users=request.user)
 
     title_words = [
         word for finding in findings for word in finding.title.split()
@@ -613,17 +613,18 @@ def prefetch_for_findings(findings):
     return prefetched_findings
 
 
-"""
-Accepted findings returns all the accepted findings for all products or a specific product
-"""
-
-
-@user_passes_test(lambda u: u.is_staff)
 def accepted_findings(request, pid=None):
-    # user = request.user
+    """
+    Accepted findings returns all the accepted findings for all products or a specific product
+    """
 
     findings = Finding.objects.filter(risk_acceptance__isnull=False)
-    findings = AcceptedFingingSuperFilter(request.GET, queryset=findings)
+    if not request.user.is_staff:
+        findings = findings.filter(test__engagement__product__authorized_users=request.user)
+        findings = AcceptedFindingFilter(request.GET, queryset=findings)
+    else:
+        findings = AcceptedFingingSuperFilter(request.GET, queryset=findings)
+
     title_words = [
         word for ra in Risk_Acceptance.objects.all() for finding in
         ra.accepted_findings.order_by('title').values('title').distinct()
@@ -649,10 +650,14 @@ def accepted_findings(request, pid=None):
         })
 
 
-@user_passes_test(lambda u: u.is_staff)
 def closed_findings(request, pid=None):
     findings = Finding.objects.filter(mitigated__isnull=False)
-    findings = ClosedFingingSuperFilter(request.GET, queryset=findings)
+    if not request.user.is_staff:
+        findings = findings.filter(test__engagement__product__authorized_users=request.user)
+        findings = ClosedFindingFilter(request.GET, queryset=findings)
+    else:
+        findings = ClosedFingingSuperFilter(request.GET, queryset=findings)
+
     title_words = [
         word for finding in findings.qs for word in finding.title.split()
         if len(word) > 2
@@ -2255,11 +2260,12 @@ def get_missing_mandatory_notetypes(finding):
     return queryset
 
 
-@user_passes_test(lambda u: u.is_staff)
 @require_POST
 def mark_finding_duplicate(request, original_id, duplicate_id):
     original = get_object_or_404(Finding, id=original_id)
     duplicate = get_object_or_404(Finding, id=duplicate_id)
+    authorize_change_or_403(request.user, original)
+    authorize_change_or_403(request.user, duplicate)
 
     if original.test.engagement != duplicate.test.engagement:
         if original.test.engagement.deduplication_on_engagement or duplicate.test.engagement.deduplication_on_engagement:
@@ -2272,8 +2278,10 @@ def mark_finding_duplicate(request, original_id, duplicate_id):
     duplicate.last_reviewed = timezone.now()
     duplicate.last_reviewed_by = request.user
     duplicate.save()
+
     original.found_by.add(duplicate.test.test_type)
     original.save()
+
     return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
 
 
@@ -2281,6 +2289,8 @@ def mark_finding_duplicate(request, original_id, duplicate_id):
 @require_POST
 def reset_finding_duplicate_status(request, duplicate_id):
     duplicate = get_object_or_404(Finding, id=duplicate_id)
+    authorize_change_or_403(request.user, duplicate)
+
     duplicate.duplicate = False
     duplicate.active = True
     if duplicate.duplicate_finding:
@@ -2289,4 +2299,5 @@ def reset_finding_duplicate_status(request, duplicate_id):
     duplicate.last_reviewed = timezone.now()
     duplicate.last_reviewed_by = request.user
     duplicate.save()
+
     return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
