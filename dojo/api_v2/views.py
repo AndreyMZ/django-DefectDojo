@@ -1007,12 +1007,12 @@ class StubFindingsViewSet(mixins.ListModelMixin,
 
     def get_queryset(self):
         if not self.request.user.is_staff:
-            return Finding.objects.filter(
+            return Stub_Finding.objects.filter(
                 Q(test__engagement__product__authorized_users__in=[self.request.user]) |
                 Q(test__engagement__product__prod_type__authorized_users__in=[self.request.user])
             )
         else:
-            return Finding.objects.all()
+            return Stub_Finding.objects.all()
 
     def get_serializer_class(self):
         if self.request.method == 'POST':
