@@ -532,8 +532,6 @@ class UploadRiskForm(forms.ModelForm):
         queryset=Finding.objects.all(), required=True,
         widget=forms.widgets.SelectMultiple(attrs={'size': 10}),
         help_text=('Active, verified findings listed, please select to add findings.'))
-    reporter = forms.ModelChoiceField(
-        queryset=User.objects.exclude(username="root"))
     accepted_by = forms.CharField(help_text="The entity or person that accepts the risk.", required=False)
     expiration_date = forms.DateTimeField(label='Date Risk Exception Expires', required=False, widget=forms.TextInput(attrs={'class': 'datepicker'}))
     compensating_control = forms.CharField(label='Compensating Control', help_text="Compensating control (if applicable) for this risk exception", required=False, max_length=2400, widget=forms.Textarea)
