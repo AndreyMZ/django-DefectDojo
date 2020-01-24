@@ -3,7 +3,7 @@ import logging
 import os
 from datetime import datetime
 import operator
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, AbstractUser
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import user_passes_test
@@ -36,6 +36,11 @@ from dojo.tasks import update_epic_task, add_epic_task
 from functools import reduce
 
 logger = logging.getLogger(__name__)
+
+
+def authorize_general_or_403(user: AbstractUser, engagement: Engagement) -> None:
+    if not (user.is_staff or engagement.product.authorized_users.filter(pk=user.pk).exists()):
+        raise PermissionDenied()
 
 
 @user_passes_test(lambda u: u.is_staff)
@@ -762,9 +767,13 @@ def complete_checklist(request, eid):
     })
 
 
-@user_passes_test(lambda u: u.is_staff)
 def upload_risk(request, eid):
-    eng = Engagement.objects.get(id=eid)
+    user = request.user
+    eng = get_object_or_404(Engagement, id=eid)
+    authorize_general_or_403(user, eng)
+    if not user.has_perm('dojo.add_risk_acceptance'):
+        raise PermissionDenied()
+
     # exclude the findings already accepted
     exclude_findings = [
         finding.id for ra in eng.risk_acceptance.all()
@@ -781,7 +790,7 @@ def upload_risk(request, eid):
                 finding.active = False
                 finding.save()
             risk = form.save(commit=False)
-            risk.reporter = form.cleaned_data['reporter']
+            risk.reporter = request.user
             risk.expiration_date = form.cleaned_data['expiration_date']
             risk.accepted_by = form.cleaned_data['accepted_by']
             risk.compensating_control = form.cleaned_data['compensating_control']
@@ -821,16 +830,19 @@ def upload_risk(request, eid):
 
 
 def view_risk(request, eid, raid):
+    user = request.user
     risk_approval = get_object_or_404(Risk_Acceptance, pk=raid)
     eng = get_object_or_404(Engagement, pk=eid)
-    if (request.user.is_staff or request.user in eng.product.authorized_users.all()):
-        pass
-    else:
-        raise PermissionDenied
+    authorize_general_or_403(user, eng)
+    if not (user == risk_approval.reporter or user.has_perm('dojo.view_risk_acceptance')):
+        raise PermissionDenied()
 
     a_file = risk_approval.path
 
     if request.method == 'POST':
+        if not (user == risk_approval.reporter or user.has_perm('dojo.change_risk_acceptance')):
+            raise PermissionDenied()
+
         note_form = NoteForm(request.POST)
         if note_form.is_valid():
             new_note = note_form.save(commit=False)
@@ -919,8 +931,6 @@ def view_risk(request, eid, raid):
         request,
         risk_approval.accepted_findings.order_by('numerical_severity'), 15)
 
-    authorized = (request.user == risk_approval.reporter.username or request.user.is_staff)
-
     product_tab = Product_Tab(eng.product.id, title="Risk Exception", tab="engagements")
     product_tab.setEngagement(eng)
     return render(
@@ -937,14 +947,17 @@ def view_risk(request, eid, raid):
             'show_add_findings_form': len(findings),
             'request': request,
             'add_findings': add_fpage,
-            'authorized': authorized,
+            'authorized_delete': user == risk_approval.reporter or user.has_perm('dojo.delete_risk_acceptance'),
         })
 
 
-@user_passes_test(lambda u: u.is_staff)
 def delete_risk(request, eid, raid):
+    user = request.user
     risk_approval = get_object_or_404(Risk_Acceptance, pk=raid)
     eng = get_object_or_404(Engagement, pk=eid)
+    authorize_general_or_403(user, eng)
+    if not (user == risk_approval.reporter or user.has_perm('dojo.delete_risk_acceptance')):
+        raise PermissionDenied()
 
     for finding in risk_approval.accepted_findings.all():
         finding.active = True
@@ -969,14 +982,13 @@ def delete_risk(request, eid, raid):
 
 def download_risk(request, eid, raid):
     import mimetypes
-
     mimetypes.init()
 
+    user = request.user
     risk_approval = get_object_or_404(Risk_Acceptance, pk=raid)
-    en = get_object_or_404(Engagement, pk=eid)
-    if (request.user.is_staff or request.user in en.product.authorized_users.all()):
-        pass
-    else:
+    eng = get_object_or_404(Engagement, pk=eid)
+    authorize_general_or_403(user, eng)
+    if not (user == risk_approval.reporter or user.has_perm('dojo.view_risk_acceptance')):
         raise PermissionDenied
 
     response = StreamingHttpResponse(
