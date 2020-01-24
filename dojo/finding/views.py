@@ -7,6 +7,7 @@ import os
 import shutil
 
 from collections import OrderedDict
+from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db.models.functions import Length
 from django.conf import settings
@@ -44,6 +45,26 @@ from dojo.tasks import add_issue_task, update_issue_task, add_comment_task
 from django.template.defaultfilters import pluralize
 
 logger = logging.getLogger(__name__)
+
+
+def authorize_general_or_403(user: AbstractUser, finding: Finding) -> None:
+    if not (user.is_staff or finding.test.engagement.product.authorized_users.filter(pk=user.pk).exists()):
+        raise PermissionDenied()
+
+def authorize_view_or_403(user: AbstractUser, finding: Finding) -> None:
+    authorize_general_or_403(user, finding)
+    if not (user == finding.reporter or user.has_perm('dojo.view_finding')):
+        raise PermissionDenied()
+
+def authorize_change_or_403(user: AbstractUser, finding: Finding) -> None:
+    authorize_general_or_403(user, finding)
+    if not (user == finding.reporter or user.has_perm('dojo.change_finding')):
+        raise PermissionDenied()
+
+def authorize_delete_or_403(user: AbstractUser, finding: Finding) -> None:
+    authorize_general_or_403(user, finding)
+    if not (user == finding.reporter or user.has_perm('dojo.delete_finding')):
+        raise PermissionDenied()
 
 
 def open_findings(request, pid=None, eid=None, view=None):
@@ -209,6 +230,7 @@ def closed_findings(request, pid=None):
 
 def view_finding(request, fid):
     finding = get_object_or_404(Finding, id=fid)
+    authorize_view_or_403(request.user, finding)
     findings = Finding.objects.filter(test=finding.test).order_by('numerical_severity')
     try:
         prev_finding = findings[(list(findings).index(finding)) - 1]
@@ -245,11 +267,6 @@ def view_finding(request, fid):
         jconf = None
         pass
     dojo_user = get_object_or_404(Dojo_User, id=user.id)
-    if user.is_staff or user in finding.test.engagement.product.authorized_users.all(
-    ):
-        pass  # user is authorized for this product
-    else:
-        raise PermissionDenied
 
     notes = finding.notes.all()
     note_type_activation = Note_Type.objects.filter(is_active=True).count()
@@ -320,7 +337,7 @@ def view_finding(request, fid):
             'cred_engagement': cred_engagement,
             'burp_response': burp_response,
             'dojo_user': dojo_user,
-            'user': user,
+            'authorized_edit': user == finding.reporter or user.has_perm('dojo.change_finding'),
             'notes': notes,
             'form': form,
             'cwe_template': cwe_template,
@@ -332,9 +349,9 @@ def view_finding(request, fid):
         })
 
 
-@user_passes_test(lambda u: u.is_staff)
 def close_finding(request, fid):
     finding = get_object_or_404(Finding, id=fid)
+    authorize_change_or_403(request.user, finding)
     # in order to close a finding, we need to capture why it was closed
     # we can do this with a Note
     note_type_activation = Note_Type.objects.filter(is_active=True)
@@ -401,9 +418,9 @@ def close_finding(request, fid):
     })
 
 
-@user_passes_test(lambda u: u.is_staff)
 def defect_finding_review(request, fid):
     finding = get_object_or_404(Finding, id=fid)
+    authorize_change_or_403(request.user, finding)
     # in order to close a finding, we need to capture why it was closed
     # we can do this with a Note
     if request.method == 'POST':
@@ -474,9 +491,9 @@ def defect_finding_review(request, fid):
     })
 
 
-@user_passes_test(lambda u: u.is_staff)
 def reopen_finding(request, fid):
     finding = get_object_or_404(Finding, id=fid)
+    authorize_change_or_403(request.user, finding)
     finding.active = True
     finding.mitigated = None
     finding.mitigated_by = request.user
@@ -497,9 +514,9 @@ def reopen_finding(request, fid):
     return HttpResponseRedirect(reverse('view_finding', args=(finding.id, )))
 
 
-@user_passes_test(lambda u: u.is_staff)
 def apply_template_cwe(request, fid):
     finding = get_object_or_404(Finding, id=fid)
+    authorize_change_or_403(request.user, finding)
 
     form = FindingFormID(instance=finding)
 
@@ -526,6 +543,7 @@ def apply_template_cwe(request, fid):
 
 def delete_finding(request, fid):
     finding = get_object_or_404(Finding, id=fid)
+    authorize_delete_or_403(request.user, finding)
 
     if request.method == 'POST':
         form = DeleteFindingForm(request.POST, instance=finding)
@@ -557,9 +575,9 @@ def delete_finding(request, fid):
         return HttpResponseForbidden()
 
 
-@user_passes_test(lambda u: u.is_staff)
 def edit_finding(request, fid):
     finding = get_object_or_404(Finding, id=fid)
+    authorize_change_or_403(request.user, finding)
     old_status = finding.status()
     form = FindingForm(instance=finding, template=False)
     form.initial['tags'] = [tag.name for tag in finding.tags]
@@ -734,18 +752,18 @@ def edit_finding(request, fid):
     })
 
 
-@user_passes_test(lambda u: u.is_staff)
 def touch_finding(request, fid):
     finding = get_object_or_404(Finding, id=fid)
+    authorize_change_or_403(request.user, finding)
     finding.last_reviewed = timezone.now()
     finding.last_reviewed_by = request.user
     finding.save()
     return HttpResponseRedirect(reverse('view_finding', args=(finding.id, )))
 
 
-@user_passes_test(lambda u: u.is_staff)
 def request_finding_review(request, fid):
     finding = get_object_or_404(Finding, id=fid)
+    authorize_change_or_403(request.user, finding)
     user = get_object_or_404(Dojo_User, id=request.user.id)
     # in order to review a finding, we need to capture why a review is needed
     # we can do this with a Note
@@ -803,9 +821,9 @@ def request_finding_review(request, fid):
     })
 
 
-@user_passes_test(lambda u: u.is_staff)
 def clear_finding_review(request, fid):
     finding = get_object_or_404(Finding, id=fid)
+    authorize_change_or_403(request.user, finding)
     user = get_object_or_404(Dojo_User, id=request.user.id)
     # in order to clear a review for a finding, we need to capture why and how it was reviewed
     # we can do this with a Note
@@ -1343,9 +1361,9 @@ def finding_from_template(request, tid):
     template = get_object_or_404(Finding_Template, id=tid)
 
 
-@user_passes_test(lambda u: u.is_staff)
 def manage_images(request, fid):
     finding = get_object_or_404(Finding, id=fid)
+    authorize_change_or_403(request.user, finding)
     images_formset = FindingImageFormSet(queryset=finding.images.all())
     error = False
 
