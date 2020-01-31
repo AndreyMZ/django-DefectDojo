@@ -45,6 +45,9 @@ class OktaOAuth2(OktaMixin, BaseOAuth2):
         ('token_type', 'token_type', True)
     ]
 
+    def get_user_id(self, details, response):
+        return super().get_user_id(details, response) or response.get('preferred_username')
+
     def get_user_details(self, response):
         """Return user details from Okta account"""
         return {'username': response.get('preferred_username'),
