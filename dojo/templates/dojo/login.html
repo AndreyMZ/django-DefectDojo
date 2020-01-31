@@ -26,7 +26,7 @@
                  {% if LOGIN_GOOGLE_ENABLED is True %}
                     <div class="col-sm-offset-1 col-sm-2">
                         <button class="btn btn-success" type="button">
-                            <a href="{% url 'social:begin' 'google-oauth2' %}?next={{ request.GET.next }}" style="color: rgb(255,255,255)">Login with Google</a>
+                            <a href="{% url 'social:begin' 'google-openidconnect' %}?next={{ request.GET.next }}" style="color: rgb(255,255,255)">Login with Google</a>
                         </button>
                     </div>
                 {% endif %}

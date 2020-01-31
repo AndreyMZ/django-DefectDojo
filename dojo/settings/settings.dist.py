@@ -69,8 +69,8 @@ env = environ.Env(
     DD_CREDENTIAL_AES_256_KEY=(str, '.'),
     DD_DATA_UPLOAD_MAX_MEMORY_SIZE=(int, 8388608),  # Max post size set to 8mb
     DD_LOGIN_GOOGLE_ENABLED=(bool, 'False'),
-    DD_SOCIAL_AUTH_GOOGLE_OAUTH2_KEY=(str, ''),
-    DD_SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET=(str, ''),
+    DD_SOCIAL_AUTH_GOOGLE_OPENIDCONNECT_KEY=(str, ''),
+    DD_SOCIAL_AUTH_GOOGLE_OPENIDCONNECT_SECRET=(str, ''),
     DD_LOGIN_OKTA_ENABLED=(bool, 'False'),
     DD_SOCIAL_AUTH_OKTA_OAUTH2_KEY=(str, ''),
     DD_SOCIAL_AUTH_OKTA_OAUTH2_SECRET=(str, ''),
@@ -253,7 +253,7 @@ LOGIN_URL = '/login'
 
 # These are the individidual modules supported by social-auth
 AUTHENTICATION_BACKENDS = (
-    'social_core.backends.google.GoogleOAuth2',
+    'social_core.backends.google_openidconnect.GoogleOpenIdConnect',
     'dojo.okta.OktaOAuth2',
     'social_core.backends.azuread_tenant.AzureADTenantOAuth2',
     'django.contrib.auth.backends.RemoteUserBackend',
@@ -280,8 +280,8 @@ SOCIAL_AUTH_ADMIN_USER_SEARCH_FIELDS = ['username', 'first_name', 'last_name', '
 SOCIAL_AUTH_USERNAME_IS_FULL_EMAIL = True
 
 LOGIN_GOOGLE_ENABLED = env('DD_LOGIN_GOOGLE_ENABLED')
-SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = env('DD_SOCIAL_AUTH_GOOGLE_OAUTH2_KEY')
-SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = env('DD_SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET')
+SOCIAL_AUTH_GOOGLE_OPENIDCONNECT_KEY = env('DD_SOCIAL_AUTH_GOOGLE_OPENIDCONNECT_KEY')
+SOCIAL_AUTH_GOOGLE_OPENIDCONNECT_SECRET = env('DD_SOCIAL_AUTH_GOOGLE_OPENIDCONNECT_SECRET')
 
 LOGIN_OKTA_ENABLED = env('DD_LOGIN_OKTA_ENABLED')
 SOCIAL_AUTH_OKTA_OAUTH2_KEY = env('DD_SOCIAL_AUTH_OKTA_OAUTH2_KEY')
