@@ -10,18 +10,11 @@
                     <i class="fa fa-eye"></i>
                     <span><b>Show Password</b></span>
                 </div>
-                {% if LOGIN_GOOGLE_ENABLED is False and LOGIN_OKTA_ENABLED is False and LOGIN_AZUREAD_TENANT_ENABLED is False %}
-                    <div class="col-sm-offset-1 col-sm-1">
-                        <button class="btn btn-success">Login</button>
-                    </div>
-                {% endif %}
             </div>
             <div class="form-group">
-                {% if LOGIN_GOOGLE_ENABLED or LOGIN_OKTA_ENABLED or LOGIN_AZUREAD_TENANT_ENABLED is True %}
-                    <div class="col-sm-offset-1 col-sm-1">
-                            <button class="btn btn-success">Login</button>
-                    </div>
-                {% endif %}
+                <div class="col-sm-offset-1 col-sm-1">
+                        <button class="btn btn-success">Login</button>
+                </div>
 
                  {% if LOGIN_GOOGLE_ENABLED is True %}
                     <div class="col-sm-offset-1 col-sm-2">
