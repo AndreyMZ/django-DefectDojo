@@ -5,11 +5,8 @@ python-social-auth/socail-core
 
 """
 from six.moves.urllib.parse import urljoin
-from jose import jwt
-from jose.jwt import JWTError, ExpiredSignatureError
-from social_core.utils import append_slash
 from social_core.backends.oauth import BaseOAuth2
-from social_core.backends.open_id_connect import OpenIdConnectAuth
+from social_core.utils import append_slash
 
 
 class OktaMixin(object):
@@ -63,44 +60,3 @@ class OktaOAuth2(OktaMixin, BaseOAuth2):
                 'Authorization': 'Bearer %s' % access_token,
             }
         )
-
-
-class OktaOpenIdConnect(OktaOAuth2, OpenIdConnectAuth):
-    """Okta OpenID-Connect authentication backend"""
-    name = 'okta-openidconnect'
-    REDIRECT_STATE = False
-    ACCESS_TOKEN_METHOD = 'POST'
-    RESPONSE_TYPE = 'code'
-
-    def validate_and_return_id_token(self, id_token, access_token):
-        """
-        Validates the id_token using Okta.
-        """
-        client_id, client_secret = self.get_key_and_secret()
-        claims = None
-        k = None
-
-        for key in self.get_jwks_keys():
-            try:
-                jwt.decode(id_token, key, audience=client_id, access_token=access_token)
-                k = key
-                break
-            except ExpiredSignatureError:
-                k = key
-                break
-            except JWTError as e:
-                if k is None and client_id == 'a-key':
-                    k = self.get_jwks_keys()[0]
-                pass
-
-            claims = jwt.decode(
-                id_token,
-                k,
-                audience=client_id,
-                issuer=self.id_token_issuer(),
-                access_token=access_token
-            )
-
-        self.validate_claims(claims)
-
-        return claims
