@@ -4,7 +4,7 @@ from social_core.backends.google import GoogleOAuth2
 
 
 def social_uid(backend, details, response, *args, **kwargs):
-    if settings.AZUREAD_TENANT_OAUTH2_ENABLED and isinstance(backend, AzureADTenantOAuth2):
+    if settings.LOGIN_AZUREAD_TENANT_ENABLED and isinstance(backend, AzureADTenantOAuth2):
         """Return user details from Azure AD account"""
         fullname, first_name, last_name, upn = (
             response.get('name', ''),
@@ -19,7 +19,7 @@ def social_uid(backend, details, response, *args, **kwargs):
                 'first_name': first_name,
                 'last_name': last_name,
                 'uid': uid}
-    elif settings.GOOGLE_OAUTH_ENABLED and isinstance(backend, GoogleOAuth2):
+    elif settings.LOGIN_GOOGLE_ENABLED and isinstance(backend, GoogleOAuth2):
         """Return user details from Google account"""
         if 'sub' in response:
             google_uid = response['sub']
