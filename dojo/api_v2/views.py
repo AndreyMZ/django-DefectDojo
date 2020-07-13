@@ -1173,6 +1173,7 @@ class TestTypesViewSet(mixins.ListModelMixin,
                        mixins.RetrieveModelMixin,
                        mixins.UpdateModelMixin,
                        mixins.CreateModelMixin,
+                       mixins.DestroyModelMixin,
                        viewsets.GenericViewSet):
     serializer_class = serializers.TestTypeSerializer
     queryset = Test_Type.objects.all()
