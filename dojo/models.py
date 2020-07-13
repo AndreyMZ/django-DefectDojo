@@ -2140,10 +2140,6 @@ class Finding(models.Model):
         else:
             deduplicationLogger.debug("skipping false positive history because it's disabled in system settings or false_history param is False")
 
-        # Title Casing
-        from titlecase import titlecase
-        self.title = titlecase(self.title)
-
         from dojo.utils import calculate_grade
         calculate_grade(self.test.engagement.product)
 
