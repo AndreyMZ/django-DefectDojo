@@ -540,9 +540,9 @@ def reopen_finding(request, fid):
     finding = get_object_or_404(Finding, id=fid)
     finding.active = True
     finding.mitigated = None
-    finding.mitigated_by = request.user
+    finding.mitigated_by = None
     finding.is_Mitigated = False
-    finding.last_reviewed = finding.mitigated
+    finding.last_reviewed = timezone.now()
     finding.last_reviewed_by = request.user
 
     # only push to JIRA if there is an issue, otherwise a new one is created
@@ -1815,18 +1815,22 @@ def finding_bulk_update_all(request, pid=None):
 
                 finds = prefetch_for_findings(finds)
 
+                now = timezone.now()
                 if form.cleaned_data['severity']:
                     finds.update(severity=form.cleaned_data['severity'],
                                  numerical_severity=Finding.get_numerical_severity(form.cleaned_data['severity']),
-                                 last_reviewed=timezone.now(),
+                                 last_reviewed=now,
                                  last_reviewed_by=request.user)
                 if form.cleaned_data['status']:
+                    is_mitigated = form.cleaned_data['is_Mitigated']
                     finds.update(active=form.cleaned_data['active'],
                                  verified=form.cleaned_data['verified'],
                                  false_p=form.cleaned_data['false_p'],
                                  out_of_scope=form.cleaned_data['out_of_scope'],
-                                 is_Mitigated=form.cleaned_data['is_Mitigated'],
-                                 last_reviewed=timezone.now(),
+                                 is_Mitigated=is_mitigated,
+                                 mitigated=(now if is_mitigated else None),
+                                 mitigated_by=(request.user if is_mitigated else None),
+                                 last_reviewed=now,
                                  last_reviewed_by=request.user)
 
                 skipped_risk_accept_count = 0
