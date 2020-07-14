@@ -1110,17 +1110,8 @@ def edit_finding(request, fid):
             new_finding.test = finding.test
             new_finding.numerical_severity = Finding.get_numerical_severity(
                 new_finding.severity)
-            if new_finding.false_p or new_finding.active is False:
-                new_finding.mitigated = timezone.now()
-                new_finding.mitigated_by = request.user
-            if new_finding.active is True:
-                new_finding.false_p = False
-                new_finding.mitigated = None
-                new_finding.mitigated_by = None
+
             if new_finding.duplicate:
-                new_finding.duplicate = True
-                new_finding.active = False
-                new_finding.verified = False
                 parent_find_string = request.POST.get('duplicate_choice', '')
                 if parent_find_string:
                     parent_find = Finding.objects.get(id=int(parent_find_string.split(':')[0]))
