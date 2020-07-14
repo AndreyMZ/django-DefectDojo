@@ -619,6 +619,8 @@ def accepted_findings(request, pid=None):
     """
 
     findings = Finding.objects.filter(risk_acceptance__isnull=False)
+    if pid:
+        findings = findings.filter(test__engagement__product__id=pid)
     if not request.user.is_staff:
         findings = findings.filter(test__engagement__product__authorized_users=request.user)
         findings = AcceptedFindingFilter(request.GET, queryset=findings)
@@ -652,6 +654,8 @@ def accepted_findings(request, pid=None):
 
 def closed_findings(request, pid=None):
     findings = Finding.objects.filter(mitigated__isnull=False)
+    if pid:
+        findings = findings.filter(test__engagement__product__id=pid)
     if not request.user.is_staff:
         findings = findings.filter(test__engagement__product__authorized_users=request.user)
         findings = ClosedFindingFilter(request.GET, queryset=findings)
