@@ -15,6 +15,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import user_passes_test
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core import serializers
+from django.http.response import HttpResponseBadRequest
 from django.urls import reverse
 from django.http import Http404, HttpResponse
 from django.http import HttpResponseRedirect, HttpResponseForbidden
@@ -2143,25 +2144,32 @@ def merge_finding_product(request, pid):
     })
 
 
-@user_passes_test(lambda u: u.is_staff)
+@require_POST
 def finding_bulk_update_all(request, pid=None):
-    form = FindingBulkUpdateForm(request.POST)
-    if request.method == "POST":
-        finding_to_update = request.POST.getlist('finding_to_update')
-        if request.POST.get('delete_bulk_findings') and finding_to_update:
-            finds = Finding.objects.filter(id__in=finding_to_update)
+    finding_to_update = request.POST.getlist('finding_to_update')
+    if not finding_to_update:
+        return HttpResponseBadRequest()
+    else:
+        finds = Finding.objects.filter(id__in=finding_to_update)
+
+        # Authorization.
+        if not request.user.is_staff:
+            finds = finds.filter(test__engagement__product__authorized_users=request.user)
+
+        if request.POST.get('delete_bulk_findings'):
             product_calc = list(Product.objects.filter(engagement__test__finding__id__in=finding_to_update).distinct())
             finds.delete()
             for prod in product_calc:
                 calculate_grade(prod)
         else:
-            if form.is_valid() and finding_to_update:
-                finding_to_update = request.POST.getlist('finding_to_update')
-                finds = Finding.objects.filter(id__in=finding_to_update).order_by("finding__test__engagement__product__id")
+            form = FindingBulkUpdateForm(request.POST)
+            if form.is_valid():
+                finds = finds.order_by("finding__test__engagement__product__id")
                 now = timezone.now()
                 if form.cleaned_data['severity']:
-                    finds.update(severity=form.cleaned_data['severity'],
-                                 numerical_severity=Finding.get_numerical_severity(form.cleaned_data['severity']),
+                    severity = form.cleaned_data['severity']
+                    finds.update(severity=severity,
+                                 numerical_severity=Finding.get_numerical_severity(severity),
                                  last_reviewed=now,
                                  last_reviewed_by=request.user)
                 if form.cleaned_data['status']:
@@ -2178,7 +2186,7 @@ def finding_bulk_update_all(request, pid=None):
 
                 if form.cleaned_data['push_to_github']:
                     logger.info('push selected findings to github')
-                    finds = Finding.objects.filter(id__in=finding_to_update)
+                    finds = finds.all()
                     for finding in finds:
                         print('will push to GitHub finding: ' + str(finding))
                         old_status = finding.status()
