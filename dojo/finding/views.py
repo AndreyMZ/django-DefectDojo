@@ -851,11 +851,13 @@ def close_finding(request, fid):
                 extra_tags='alert-success')
 
             if len(missing_note_types) == 0:
-                finding.active = False
                 now = timezone.now()
+                
+                finding.active = False
+                finding.is_Mitigated = True
                 finding.mitigated = now
                 finding.mitigated_by = request.user
-                finding.last_reviewed = finding.mitigated
+                finding.last_reviewed = now
                 finding.last_reviewed_by = request.user
                 finding.endpoints.clear()
                 finding.save()
@@ -967,10 +969,12 @@ def defect_finding_review(request, fid):
 def reopen_finding(request, fid):
     finding = get_object_or_404(Finding, id=fid)
     authorize_change_or_403(request.user, finding)
+
     finding.active = True
+    finding.is_Mitigated = False
     finding.mitigated = None
-    finding.mitigated_by = request.user
-    finding.last_reviewed = finding.mitigated
+    finding.mitigated_by = None
+    finding.last_reviewed = timezone.now()
     finding.last_reviewed_by = request.user
     finding.save()
 
@@ -2154,18 +2158,22 @@ def finding_bulk_update_all(request, pid=None):
             if form.is_valid() and finding_to_update:
                 finding_to_update = request.POST.getlist('finding_to_update')
                 finds = Finding.objects.filter(id__in=finding_to_update).order_by("finding__test__engagement__product__id")
+                now = timezone.now()
                 if form.cleaned_data['severity']:
                     finds.update(severity=form.cleaned_data['severity'],
                                  numerical_severity=Finding.get_numerical_severity(form.cleaned_data['severity']),
-                                 last_reviewed=timezone.now(),
+                                 last_reviewed=now,
                                  last_reviewed_by=request.user)
                 if form.cleaned_data['status']:
+                    is_mitigated = form.cleaned_data['is_Mitigated']
                     finds.update(active=form.cleaned_data['active'],
                                  verified=form.cleaned_data['verified'],
                                  false_p=form.cleaned_data['false_p'],
                                  out_of_scope=form.cleaned_data['out_of_scope'],
-                                 is_Mitigated=form.cleaned_data['is_Mitigated'],
-                                 last_reviewed=timezone.now(),
+                                 is_Mitigated=is_mitigated,
+                                 mitigated=(now if is_mitigated else None),
+                                 mitigated_by=(request.user if is_mitigated else None),
+                                 last_reviewed=now,
                                  last_reviewed_by=request.user)
 
                 if form.cleaned_data['push_to_github']:
