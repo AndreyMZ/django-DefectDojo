@@ -1,12 +1,13 @@
 import re
 from datetime import datetime, date
+from typing import Tuple, Optional
 from urllib.parse import urlsplit, urlunsplit
 
 
 from dateutil.relativedelta import relativedelta
 from django import forms
 from django.core import validators
-from django.core.validators import RegexValidator
+from django.core.validators import RegexValidator, URLValidator, validate_ipv46_address
 from django.core.exceptions import ValidationError
 from django.forms import modelformset_factory
 from django.forms.widgets import Widget, Select
@@ -1237,13 +1238,10 @@ class AddEndpointForm(forms.Form):
         return processed_endpoints
 
     def clean(self):
-        from django.core.validators import URLValidator, validate_ipv46_address
-
-        port_re = "(:[0-9]{1,5}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])"
         cleaned_data = super(AddEndpointForm, self).clean()
 
         if 'endpoint' in cleaned_data and 'product' in cleaned_data:
-            endpoint = cleaned_data['endpoint']
+            endpoints = cleaned_data['endpoint']
             product = cleaned_data['product']
             if isinstance(product, Product):
                 self.product = product
@@ -1253,49 +1251,52 @@ class AddEndpointForm(forms.Form):
             raise forms.ValidationError('Please enter a valid URL or IP address.',
                                         code='invalid')
 
-        endpoints = endpoint.split()
-        count = 0
-        error = False
-        for endpoint in endpoints:
-            try:
-                url_validator = URLValidator()
-                url_validator(endpoint)
-                protocol, host, path, query, fragment = urlsplit(endpoint)
-                self.endpoints_to_process.append([protocol, host, path, query, fragment])
-            except forms.ValidationError:
-                try:
-                    # do we have a port number?
-                    host = endpoint
-                    regex = re.compile(port_re)
-                    if regex.findall(endpoint):
-                        for g in regex.findall(endpoint):
-                            host = re.sub(port_re, '', host)
-                    validate_ipv46_address(host)
-                    protocol, host, path, query, fragment = ("", endpoint, "", "", "")
-                    self.endpoints_to_process.append([protocol, host, path, query, fragment])
-                except forms.ValidationError:
-                    try:
-                        regex = re.compile(
-                            r'^(?:(?:[A-Z0-9](?:[A-Z0-9-_]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}(?<!-)\.?)|'  # domain...
-                            r'localhost|'  # localhost...
-                            r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}|'  # ...or ipv4
-                            r'\[?[A-F0-9]*:[A-F0-9:]+\]?)'  # ...or ipv6
-                            r'(?::\d+)?'  # optional port
-                            r'(?:/?|[/?]\S+)$', re.IGNORECASE)
-                        validate_hostname = RegexValidator(regex=regex)
-                        validate_hostname(host)
-                        protocol, host, path, query, fragment = (None, host, None, None, None)
-                        if "/" in host or "?" in host or "#" in host:
-                            # add a fake protocol just to join, wont use in update to database
-                            host_with_protocol = "http://" + host
-                            p, host, path, query, fragment = urlsplit(host_with_protocol)
-                        self.endpoints_to_process.append([protocol, host, path, query, fragment])
-                    except forms.ValidationError:
-                        raise forms.ValidationError(
-                            'Please check items entered, one or more do not appear to be a valid URL or IP address.',
-                            code='invalid')
+        for endpoint in endpoints.split():
+            self.endpoints_to_process.append(AddEndpointForm._parse_endpoint(endpoint))
 
         return cleaned_data
+
+    port_regex = re.compile(r"(:[0-9]{1,5}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])")
+
+    url_without_scheme_regex = re.compile(
+        r'^(?:(?:[A-Z0-9](?:[A-Z0-9-_]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}(?<!-)\.?)|'  # domain...
+        r'localhost|'  # localhost...
+        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}|'  # ...or ipv4
+        r'\[?[A-F0-9]*:[A-F0-9:]+\]?)'  # ...or ipv6
+        r'(?::\d+)?'  # optional port
+        r'(?:/?|[/?]\S+)'  # optional query and fragment
+        r'$'
+        , re.IGNORECASE)
+
+    @staticmethod
+    def _parse_endpoint(endpoint: str) -> Tuple[Optional[str], str, Optional[str], Optional[str], Optional[str]]:
+        """
+        :return: Tuple of scheme, netloc, path, query, fragment.
+        """
+        try:
+            validate_url = URLValidator()
+            validate_url(endpoint)
+            return urlsplit(endpoint)
+        except forms.ValidationError:
+            try:
+                host = AddEndpointForm.port_regex.sub('', endpoint)
+                validate_ipv46_address(host)
+                return None, endpoint, None, None, None
+            except forms.ValidationError:
+                try:
+                    validate_url_without_scheme = RegexValidator(AddEndpointForm.url_without_scheme_regex)
+                    validate_url_without_scheme(endpoint)
+                    if ("/" in endpoint) or ("?" in endpoint) or ("#" in endpoint):
+                        # Add a fake scheme just to `urlsplit`. Won't use it in update to the database.
+                        url_with_fake_scheme = "https://" + endpoint
+                        _, netloc, path, query, fragment = urlsplit(url_with_fake_scheme)
+                        return None, netloc, path, query, fragment
+                    else:
+                        return None, endpoint, None, None, None
+                except forms.ValidationError:
+                    raise forms.ValidationError(
+                        'Please check items entered, one or more do not appear to be a valid URL or IP address.',
+                        code='invalid')
 
 
 class DeleteEndpointForm(forms.ModelForm):
