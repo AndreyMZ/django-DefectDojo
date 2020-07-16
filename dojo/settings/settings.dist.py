@@ -372,6 +372,7 @@ SOCIAL_AUTH_PIPELINE = (
     'social_core.pipeline.social_auth.associate_user',
     'social_core.pipeline.social_auth.load_extra_data',
     'social_core.pipeline.user.user_details',
+    'dojo.social_auth.pipeline.user_groups',
     'dojo.pipeline.update_product_access',
 )
 
@@ -382,6 +383,9 @@ SHOW_LOGIN_FORM = env('DD_SOCIAL_AUTH_SHOW_LOGIN_FORM')
 SOCIAL_AUTH_STRATEGY = 'social_django.strategy.DjangoStrategy'
 SOCIAL_AUTH_STORAGE = 'social_django.models.DjangoStorage'
 SOCIAL_AUTH_ADMIN_USER_SEARCH_FIELDS = ['username', 'first_name', 'last_name', 'email']
+SOCIAL_AUTH_USER_FIELD_MAPPING = {
+    'groups': '', # Prevent `social_core.pipeline.user.user_details` from trying to assign `user.groups`.
+}
 
 # https://python-social-auth.readthedocs.io/en/latest/configuration/settings.html
 SOCIAL_AUTH_USERNAME_IS_FULL_EMAIL = env('DD_SOCIAL_AUTH_USERNAME_IS_FULL_EMAIL')
