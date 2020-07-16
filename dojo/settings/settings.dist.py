@@ -337,7 +337,7 @@ AUTHENTICATION_BACKENDS = (
     'social_core.backends.auth0.Auth0OAuth2',
     'social_core.backends.google.GoogleOAuth2',
     'dojo.okta.OktaOAuth2',
-    'social_core.backends.azuread_tenant.AzureADTenantOAuth2',
+    'dojo.social_auth.backends.azuread_tenant.AzureADTenantOAuth2',
     'social_core.backends.gitlab.GitLabOAuth2',
     'django.contrib.auth.backends.RemoteUserBackend',
     'django.contrib.auth.backends.ModelBackend',
