@@ -33,16 +33,12 @@ class EndPointViewSet(mixins.ListModelMixin,
                       mixins.CreateModelMixin,
                       viewsets.GenericViewSet):
     serializer_class = serializers.EndpointSerializer
-    queryset = Endpoint.objects.all()
+    queryset = Endpoint.objects.none()
     filter_backends = (DjangoFilterBackend,)
     filter_fields = ('id', 'host', 'product')
 
     def get_queryset(self):
-        if not self.request.user.is_staff:
-            return Endpoint.objects.filter(
-                product__authorized_users__in=[self.request.user])
-        else:
-            return Endpoint.objects.all()
+        return Endpoint.objects.auth(self.request.user)
 
     @action(detail=True, methods=['post'], permission_classes=[permissions.UserHasReportGeneratePermission])
     def generate_report(self, request, pk=None):
@@ -73,7 +69,7 @@ class EngagementViewSet(mixins.ListModelMixin,
                         ra_api.AcceptedRisksMixin,
                         viewsets.GenericViewSet):
     serializer_class = serializers.EngagementSerializer
-    queryset = Engagement.objects.all()
+    queryset = Engagement.objects.none()
     filter_backends = (DjangoFilterBackend,)
     filter_fields = ('id', 'active', 'eng_type', 'target_start',
                      'target_end', 'requester', 'report_type',
@@ -85,11 +81,7 @@ class EngagementViewSet(mixins.ListModelMixin,
         return Engagement
 
     def get_queryset(self):
-        if not self.request.user.is_staff:
-            return Engagement.objects.filter(
-                product__authorized_users__in=[self.request.user])
-        else:
-            return Engagement.objects.all()
+        return Engagement.objects.auth(self.request.user)
 
     @action(detail=True, methods=["post"])
     def close(self, request, pk=None):
@@ -200,10 +192,7 @@ class FindingViewSet(mixins.ListModelMixin,
         serializer.save(push_to_jira=push_to_jira)
 
     def get_queryset(self):
-        if not self.request.user.is_staff:
-            return Finding.objects.filter(test__engagement__product__authorized_users=self.request.user)
-        else:
-            return Finding.objects.all()
+        return Finding.objects.auth(self.request.user)
 
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -401,8 +390,7 @@ class ProductViewSet(mixins.ListModelMixin,
                      viewsets.GenericViewSet):
     serializer_class = serializers.ProductSerializer
     # TODO: prefetch
-    queryset = Product.objects.all()
-    queryset = queryset.annotate(active_finding_count=Count('engagement__test__finding__id', filter=Q(engagement__test__finding__active=True)))
+    queryset = Product.objects.none()
     filter_backends = (DjangoFilterBackend,)
     permission_classes = (permissions.UserHasProductPermission,
                           DjangoModelPermissions)
@@ -410,11 +398,9 @@ class ProductViewSet(mixins.ListModelMixin,
     filter_fields = ('id', 'name', 'prod_type', 'created', 'authorized_users')
 
     def get_queryset(self):
-        if not self.request.user.is_staff:
-            return self.queryset.filter(
-                authorized_users__in=[self.request.user])
-        else:
-            return self.queryset
+        return Product.objects.auth(self.request.user).annotate(
+            active_finding_count=Count('engagement__test__finding__id', filter=Q(engagement__test__finding__active=True))
+        )
 
     @action(detail=True, methods=['post'], permission_classes=[permissions.UserHasReportGeneratePermission])
     def generate_report(self, request, pk=None):
@@ -443,16 +429,12 @@ class ProductTypeViewSet(mixins.ListModelMixin,
                          mixins.UpdateModelMixin,
                          viewsets.GenericViewSet):
     serializer_class = serializers.ProductTypeSerializer
-    queryset = Product_Type.objects.all()
+    queryset = Product_Type.objects.none()
     filter_backends = (DjangoFilterBackend,)
     filter_fields = ('id', 'name', 'critical_product', 'key_product', 'created', 'updated')
 
     def get_queryset(self):
-        if not self.request.user.is_staff:
-            return Product_Type.objects.filter(
-                prod_type__authorized_users__in=[self.request.user])
-        else:
-            return Product_Type.objects.all()
+        return Product_Type.objects.auth(self.request.user)
 
     @action(detail=True, methods=['post'], permission_classes=[permissions.UserHasReportGeneratePermission])
     def generate_report(self, request, pk=None):
@@ -482,7 +464,7 @@ class ScanSettingsViewSet(mixins.ListModelMixin,
                           mixins.CreateModelMixin,
                           viewsets.GenericViewSet):
     serializer_class = serializers.ScanSettingsSerializer
-    queryset = ScanSettings.objects.all()
+    queryset = ScanSettings.objects.none()
     permission_classes = (permissions.UserHasScanSettingsPermission,
                           DjangoModelPermissions)
     filter_backends = (DjangoFilterBackend,)
@@ -495,11 +477,7 @@ class ScanSettingsViewSet(mixins.ListModelMixin,
             return serializers.ScanSettingsSerializer
 
     def get_queryset(self):
-        if not self.request.user.is_staff:
-            return ScanSettings.objects.filter(
-                product__authorized_users__in=[self.request.user])
-        else:
-            return ScanSettings.objects.all()
+        return ScanSettings.objects.auth(self.request.user)
 
 
 class ScansViewSet(mixins.ListModelMixin,
@@ -507,18 +485,14 @@ class ScansViewSet(mixins.ListModelMixin,
                    viewsets.GenericViewSet):
     # TODO: ipscans
     serializer_class = serializers.ScanSerializer
-    queryset = Scan.objects.all()
+    queryset = Scan.objects.none()
     permission_classes = (permissions.UserHasScanPermission,
                           DjangoModelPermissions)
     filter_backends = (DjangoFilterBackend,)
     filter_fields = ('id', 'date', 'scan_settings')
 
     def get_queryset(self):
-        if not self.request.user.is_staff:
-            return Scan.objects.filter(
-                scan_settings__product__authorized_users__in=[self.request.user])
-        else:
-            return Scan.objects.all()
+        return Scan.objects.auth(self.request.user)
 
 
 class StubFindingsViewSet(mixins.ListModelMixin,
@@ -532,10 +506,7 @@ class StubFindingsViewSet(mixins.ListModelMixin,
     filter_fields = ('id', 'title', 'date', 'severity', 'description')
 
     def get_queryset(self):
-        if not self.request.user.is_staff:
-            return Stub_Finding.objects.filter(test__engagement__product__authorized_users=self.request.user)
-        else:
-            return Stub_Finding.objects.all()
+        return Stub_Finding.objects.auth(self.request.user)
 
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -562,7 +533,7 @@ class TestsViewSet(mixins.ListModelMixin,
                    ra_api.AcceptedRisksMixin,
                    viewsets.GenericViewSet):
     serializer_class = serializers.TestSerializer
-    queryset = Test.objects.all()
+    queryset = Test.objects.none()
     filter_backends = (DjangoFilterBackend,)
     filter_fields = ('id', 'title', 'test_type', 'target_start',
                      'target_end', 'notes', 'percent_complete',
@@ -573,11 +544,7 @@ class TestsViewSet(mixins.ListModelMixin,
         return Test
 
     def get_queryset(self):
-        if not self.request.user.is_staff:
-            return Test.objects.filter(
-                engagement__product__authorized_users__in=[self.request.user])
-        else:
-            return Test.objects.all()
+        return Test.objects.auth(self.request.user)
 
     def get_serializer_class(self):
         if self.request.method == 'POST':

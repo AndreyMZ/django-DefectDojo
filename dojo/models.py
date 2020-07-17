@@ -3,8 +3,12 @@ import hashlib
 import logging
 import os
 import re
+from abc import ABC, abstractmethod
+from typing import Optional
 from uuid import uuid4
 from django.conf import settings
+from django.db.models.query import QuerySet
+from django.db.models.query_utils import Q
 from watson import search as watson
 from auditlog.registry import auditlog
 from django.contrib import admin
@@ -31,6 +35,8 @@ from django.contrib.contenttypes.fields import GenericRelation
 from tagging.models import TaggedItem
 from dateutil.relativedelta import relativedelta
 
+User = get_user_model()
+
 fmt = getattr(settings, 'LOG_FORMAT', None)
 lvl = getattr(settings, 'LOG_LEVEL', logging.DEBUG)
 
@@ -38,6 +44,12 @@ logging.basicConfig(format=fmt, level=lvl)
 import logging
 logger = logging.getLogger(__name__)
 deduplicationLogger = logging.getLogger("dojo.specific-loggers.deduplication")
+
+
+class DojoManager(models.Manager, ABC):
+    @abstractmethod
+    def auth(self, user: Optional[User]) -> QuerySet:
+        pass
 
 
 @deconstructible
@@ -310,9 +322,6 @@ def get_current_datetime():
     return timezone.now()
 
 
-User = get_user_model()
-
-
 # proxy class for convenience and UI
 class Dojo_User(User):
     class Meta:
@@ -385,6 +394,12 @@ class Product_Type(models.Model):
     key_product = models.BooleanField(default=False)
     updated = models.DateTimeField(auto_now=True, null=True)
     created = models.DateTimeField(auto_now_add=True, null=True)
+
+    class Manager(DojoManager):
+        def auth(self, user: Optional[User]) -> QuerySet:
+            return authorize_products_in_qs(user, self.get_queryset(), 'prod_type')
+
+    objects = Manager()
 
     @cached_property
     def critical_present(self):
@@ -624,6 +639,12 @@ class Product(models.Model):
     # used for prefetching tags because django-tagging doesn't support that out of the box
     tagged_items = GenericRelation(TaggedItem)
 
+    class Manager(DojoManager):
+        def auth(self, user: Optional[User]) -> QuerySet:
+            return authorize_products_in_qs(user, self.get_queryset())
+
+    objects = Manager()
+
     def __unicode__(self):
         return self.name
 
@@ -766,6 +787,12 @@ class ScanSettings(models.Model):
     email = models.CharField(max_length=512)
     protocol = models.CharField(max_length=10, default='TCP')
 
+    class Manager(DojoManager):
+        def auth(self, user: Optional[User]) -> QuerySet:
+            return authorize_products_in_qs(user, self.get_queryset(), 'product')
+
+    objects = Manager()
+
     def addresses_as_list(self):
         if self.addresses:
             return [a.strip() for a in self.addresses.split(',')]
@@ -792,6 +819,12 @@ class Scan(models.Model):
     protocol = models.CharField(max_length=10, default='TCP')
     status = models.CharField(max_length=10, default='Pending', editable=False)
     baseline = models.BooleanField(default=False, verbose_name="Current Baseline")
+
+    class Manager(DojoManager):
+        def auth(self, user: Optional[User]) -> QuerySet:
+            return authorize_products_in_qs(user, self.get_queryset(), 'scan_settings__product')
+
+    objects = Manager()
 
     def __unicode__(self):
         return self.scan_settings.protocol + " Scan " + str(self.date)
@@ -968,6 +1001,12 @@ class Engagement(models.Model):
     class Meta:
         ordering = ['-target_start']
 
+    class Manager(DojoManager):
+        def auth(self, user: Optional[User]) -> QuerySet:
+            return authorize_products_in_qs(user, self.get_queryset(), 'product')
+
+    objects = Manager()
+
     def is_overdue(self):
         if self.engagement_type == 'CI/CD':
             overdue_grace_days = 10
@@ -1047,6 +1086,12 @@ class Endpoint(models.Model):
 
     class Meta:
         ordering = ['product', 'protocol', 'host', 'path', 'query', 'fragment']
+
+    class Manager(DojoManager):
+        def auth(self, user: Optional[User]) -> QuerySet:
+            return authorize_products_in_qs(user, self.get_queryset(), 'product')
+
+    objects = Manager()
 
     def __unicode__(self):
         from urllib.parse import uses_netloc
@@ -1243,6 +1288,12 @@ class Test(models.Model):
     # used for prefetching tags because django-tagging doesn't support that out of the box
     tagged_items = GenericRelation(TaggedItem)
 
+    class Manager(DojoManager):
+        def auth(self, user: Optional[User]) -> QuerySet:
+            return authorize_products_in_qs(user, self.get_queryset(), 'engagement__product')
+
+    objects = Manager()
+
     def test_type_name(self):
         return self.test_type.name
 
@@ -1434,6 +1485,12 @@ class Finding(models.Model):
             models.Index(fields=['date']),
             models.Index(fields=['title']),
         ]
+
+    class Manager(DojoManager):
+        def auth(self, user: Optional[User]) -> QuerySet:
+            return authorize_products_in_qs(user, self.get_queryset(), 'test__engagement__product')
+
+    objects = Manager()
 
     @classmethod
     def unaccepted_open_findings(cls):
@@ -1909,6 +1966,12 @@ class Stub_Finding(models.Model):
 
     def __unicode__(self):
         return self.title
+
+    class Manager(DojoManager):
+        def auth(self, user: Optional[User]) -> QuerySet:
+            return authorize_products_in_qs(user, self.get_queryset(), 'test__engagement__product')
+
+    objects = Manager()
 
     def __str__(self):
         return self.title
@@ -2883,3 +2946,17 @@ watson.register(App_Analysis)
 admin.site.register(Sonarqube_Issue)
 admin.site.register(Sonarqube_Issue_Transition)
 admin.site.register(Sonarqube_Product)
+
+
+def authorize_products_in_qs(user: Optional[User], queryset: QuerySet, product_lookup: Optional[str] = None) -> QuerySet:
+    if user is None:
+        return queryset.none()
+    elif user.is_staff:
+        return queryset
+    else:
+        return queryset.filter(
+              Q(**{_combine_lookups(product_lookup, 'authorized_users'): user})
+        )
+
+def _combine_lookups(lookup1: Optional[str], lookup2: str) -> str:
+    return f"{lookup1}__{lookup2}" if lookup1 is not None else lookup2

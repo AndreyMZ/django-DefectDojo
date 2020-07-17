@@ -9,6 +9,8 @@ from django.core.exceptions import PermissionDenied
 from django.urls import reverse
 from django.http import HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404
+
+from dojo.authorization import authorize_product_or_403
 from dojo.forms import ScanSettingsForm, DeleteIPScanForm, VaForm
 from dojo.management.commands.run_scan import run_on_deman_scan
 from dojo.models import Product, Scan, IPScan, ScanSettings
@@ -25,11 +27,9 @@ status: completed in use
 def view_scan(request, sid):
     scan = get_object_or_404(Scan, id=sid)
     prod = get_object_or_404(Product, id=scan.scan_settings.product.id)
+    authorize_product_or_403(request.user, prod)
+
     scan_settings_id = scan.scan_settings.id
-    if request.user.is_staff or request.user in prod.authorized_users.all():
-        pass  # user is authorized for this product
-    else:
-        raise PermissionDenied
 
     if request.method == "POST":
         form = DeleteIPScanForm(request.POST, instance=scan)
@@ -81,11 +81,7 @@ status: completed in use
 
 def view_scan_settings(request, pid, sid):
     scan_settings = get_object_or_404(ScanSettings, id=sid)
-    user = request.user
-    if user.is_staff or user in scan_settings.product.authorized_users.all():
-        pass
-    else:
-        raise PermissionDenied
+    authorize_product_or_403(request.user, scan_settings.product)
 
     scan_is_running = False
 
@@ -137,12 +133,9 @@ view scan settings for self-service scan
 
 def edit_scan_settings(request, pid, sid):
     old_scan = ScanSettings.objects.get(id=sid)
+    authorize_product_or_403(request.user, old_scan.product)
+
     pid = old_scan.product.id
-    user = request.user
-    if user.is_staff or user in old_scan.product.authorized_users.all():
-        pass
-    else:
-        raise PermissionDenied
 
     if request.method == 'POST':
         if request.POST.get('edit'):
@@ -194,10 +187,7 @@ Self-service port scanning tool found at the product level
 
 def gmap(request, pid):
     prod = get_object_or_404(Product, id=pid)
-    if request.user.is_staff or request.user in prod.authorized_users.all():
-        pass  # user is authorized for this product
-    else:
-        raise PermissionDenied
+    authorize_product_or_403(request.user, prod)
 
     form = ScanSettingsForm()
     if request.method == 'POST':

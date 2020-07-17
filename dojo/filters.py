@@ -13,7 +13,7 @@ from django_filters.filters import ChoiceFilter, _truncate, DateTimeFilter
 from pytz import timezone
 
 from dojo.models import Dojo_User, Product_Type, Finding, Product, Test_Type, \
-    Endpoint, Development_Environment, Finding_Template, Report, Note_Type
+    Endpoint, Development_Environment, Finding_Template, Report, Note_Type, authorize_products_in_qs
 from dojo.utils import get_system_setting
 
 local_tz = timezone(get_system_setting('time_zone'))
@@ -43,6 +43,7 @@ def get_earliest_finding():
 
 class DojoFilter(FilterSet):
     def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
         super(DojoFilter, self).__init__(*args, **kwargs)
 
 
@@ -280,7 +281,7 @@ class EngagementFilter(DojoFilter):
 class ProductFilter(DojoFilter):
     name = CharFilter(lookup_expr='icontains', label="Product Name")
     prod_type = ModelMultipleChoiceFilter(
-        queryset=Product_Type.objects.all().order_by('name'),
+        queryset=Product_Type.objects.none(),
         label="Product Type")
     business_criticality = MultipleChoiceFilter(choices=Product.BUSINESS_CRITICALITY_CHOICES)
     platform = MultipleChoiceFilter(choices=Product.PLATFORM_CHOICES)
@@ -316,16 +317,8 @@ class ProductFilter(DojoFilter):
     # tags = CharFilter(lookup_expr='icontains', label="Tags")
 
     def __init__(self, *args, **kwargs):
-        self.user = None
-        if 'user' in kwargs:
-            self.user = kwargs.pop('user')
-
-        super(ProductFilter, self).__init__(*args, **kwargs)
-
-        if self.user is not None and not self.user.is_staff:
-            self.form.fields[
-                'prod_type'].queryset = Product_Type.objects.filter(
-                prod_type__authorized_users__in=[self.user])
+        super().__init__(*args, **kwargs)
+        self.form.fields['prod_type'].queryset = Product_Type.objects.auth(self.user)
 
     class Meta:
         model = Product
@@ -348,7 +341,7 @@ class OpenFindingFilter(DojoFilter):
     test__test_type = ModelMultipleChoiceFilter(
         queryset=Test_Type.objects.all())
     test__engagement__product = ModelMultipleChoiceFilter(
-        queryset=Product.objects.all(),
+        queryset=Product.objects.none(),
         label="Product")
     if get_system_setting('enable_jira'):
         jira_issue = BooleanFilter(field_name='jira_issue',
@@ -379,13 +372,7 @@ class OpenFindingFilter(DojoFilter):
                    'line_number', 'reviewers', 'mitigated_by', 'sourcefile', 'jira_creation', 'jira_change']
 
     def __init__(self, *args, **kwargs):
-        self.user = None
-        self.pid = None
-        if 'user' in kwargs:
-            self.user = kwargs.pop('user')
-
-        if 'pid' in kwargs:
-            self.pid = kwargs.pop('pid')
+        self.pid = kwargs.pop('pid', None)
         super(OpenFindingFilter, self).__init__(*args, **kwargs)
 
         cwe = dict()
@@ -394,16 +381,14 @@ class OpenFindingFilter(DojoFilter):
                    if type(finding.cwe) is int and finding.cwe is not None and finding.cwe > 0 and finding.cwe not in cwe)
         cwe = collections.OrderedDict(sorted(cwe.items()))
         self.form.fields['cwe'].choices = list(cwe.items())
-        if self.user is not None and not self.user.is_staff:
-            if self.form.fields.get('test__engagement__product'):
-                qs = Product.objects.filter(authorized_users__in=[self.user])
-                self.form.fields['test__engagement__product'].queryset = qs
-            self.form.fields['endpoints'].queryset = Endpoint.objects.filter(
-                product__authorized_users__in=[self.user]).distinct()
 
-        # Don't show the product filter on the product finding view
         if self.pid:
+            # Don't show the product filter on the product finding view
             del self.form.fields['test__engagement__product']
+        else:
+            self.form.fields['test__engagement__product'].queryset = Product.objects.auth(self.user)
+
+        self.form.fields['endpoints'].queryset = Endpoint.objects.auth(self.user).distinct()
 
 
 class OpenFingingSuperFilter(OpenFindingFilter):
@@ -728,7 +713,7 @@ class MetricsFindingFilter(FilterSet):
 
 class EndpointFilter(DojoFilter):
     product = ModelMultipleChoiceFilter(
-        queryset=Product.objects.all().order_by('name'),
+        queryset=Product.objects.none(),
         label="Product")
     host = CharFilter(lookup_expr='icontains')
     path = CharFilter(lookup_expr='icontains')
@@ -745,13 +730,8 @@ class EndpointFilter(DojoFilter):
     )
 
     def __init__(self, *args, **kwargs):
-        self.user = None
-        if 'user' in kwargs:
-            self.user = kwargs.pop('user')
         super(EndpointFilter, self).__init__(*args, **kwargs)
-        if self.user and not self.user.is_staff:
-            self.form.fields['product'].queryset = Product.objects.filter(
-                authorized_users__in=[self.user]).distinct().order_by('name')
+        self.form.fields['product'].queryset = Product.objects.auth(self.user).distinct().order_by('name')
 
     class Meta:
         model = Endpoint
@@ -809,23 +789,13 @@ class ReportAuthedFindingFilter(DojoFilter):
     out_of_scope = ReportBooleanFilter()
 
     def __init__(self, *args, **kwargs):
-        self.user = None
-        if 'user' in kwargs:
-            self.user = kwargs.pop('user')
         super(ReportAuthedFindingFilter, self).__init__(*args, **kwargs)
-        if not self.user.is_staff:
-            self.form.fields[
-                'test__engagement__product'].queryset = Product.objects.filter(
-                authorized_users__in=[self.user])
+        self.form.fields['test__engagement__product'].queryset = Product.objects.auth(self.user)
 
     @property
     def qs(self):
         parent = super(ReportAuthedFindingFilter, self).qs
-        if self.user.is_staff:
-            return parent
-        else:
-            return parent.filter(
-                test__engagement__product__authorized_users__in=[self.user])
+        return authorize_products_in_qs(self.user, parent, 'test__engagement__product')
 
     class Meta:
         model = Finding
