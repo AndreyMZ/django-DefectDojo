@@ -1139,7 +1139,6 @@ class StubFindingCreateSerializer(serializers.ModelSerializer):
 
 class ProductSerializer(TaggitSerializer, serializers.ModelSerializer):
     findings_count = serializers.SerializerMethodField()
-    findings_list = serializers.SerializerMethodField()
 
     tags = TagListSerializerField(required=False)
     product_meta = ProductMetaSerializer(read_only=True, many=True)
@@ -1156,11 +1155,6 @@ class ProductSerializer(TaggitSerializer, serializers.ModelSerializer):
 
     def get_findings_count(self, obj) -> int:
         return obj.findings_count
-
-    #  -> List[int] as return type doesn't seem enough for drf-yasg
-    @swagger_serializer_method(serializer_or_field=serializers.ListField(child=serializers.IntegerField()))
-    def get_findings_list(self, obj) -> List[int]:
-        return obj.open_findings_list
 
 
 class ImportScanSerializer(serializers.Serializer):
