@@ -395,7 +395,7 @@ class ProductViewSet(mixins.ListModelMixin,
     permission_classes = (permissions.UserHasProductPermission,
                           DjangoModelPermissions)
 
-    filter_fields = ('id', 'name', 'prod_type', 'created', 'authorized_users')
+    filter_fields = ('id', 'name', 'prod_type', 'created', 'authorized_users', 'authorized_groups')
 
     def get_queryset(self):
         return Product.objects.auth(self.request.user).annotate(

@@ -7,6 +7,7 @@ from abc import ABC, abstractmethod
 from typing import Optional
 from uuid import uuid4
 from django.conf import settings
+from django.contrib.auth.models import Group
 from django.db.models.query import QuerySet
 from django.db.models.query_utils import Q
 from watson import search as watson
@@ -623,6 +624,7 @@ class Product(models.Model):
     updated = models.DateTimeField(editable=False, null=True, blank=True)
     tid = models.IntegerField(default=0, editable=False)
     authorized_users = models.ManyToManyField(User, blank=True)
+    authorized_groups = models.ManyToManyField(Group, blank=True)
     prod_numeric_grade = models.IntegerField(null=True, blank=True)
 
     # Metadata
@@ -2956,6 +2958,7 @@ def authorize_products_in_qs(user: Optional[User], queryset: QuerySet, product_l
     else:
         return queryset.filter(
               Q(**{_combine_lookups(product_lookup, 'authorized_users'): user})
+            | Q(**{_combine_lookups(product_lookup, 'authorized_groups__user'): user})
         )
 
 def _combine_lookups(lookup1: Optional[str], lookup2: str) -> str:
