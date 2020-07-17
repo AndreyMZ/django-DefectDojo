@@ -16,6 +16,8 @@ from django.utils import timezone
 from django.db.models import Sum, Count, Q, Max
 from django.contrib.admin.utils import NestedObjects
 from django.db import DEFAULT_DB_ALIAS
+
+from dojo.authorization import authorize_product_or_403
 from dojo.templatetags.display_tags import get_level
 from dojo.filters import ProductFilter, ProductFindingFilter, EngagementFilter
 from dojo.forms import ProductForm, EngForm, DeleteProductForm, DojoMetaDataForm, JIRAPKeyForm, JIRAFindingForm, AdHocFindingForm, GITHUB_Product_Form, GITHUBFindingForm, \
@@ -44,10 +46,7 @@ def product(request):
         if len(p) == 1:
             product_type = get_object_or_404(Product_Type, id=p[0])
 
-    prods = Product.objects.all()
-
-    if not request.user.is_staff:
-        prods = prods.filter(authorized_users__in=[request.user])
+    prods = Product.objects.auth(request.user)
 
     # perform all stuff for filtering and pagination first, before annotation/prefetching
     # otherwise the paginator will perform all the annotations/prefetching already only to count the total number of records
@@ -104,10 +103,8 @@ def iso_to_gregorian(iso_year, iso_week, iso_day):
 def view_product(request, pid):
     prod_query = Product.objects.all().select_related('product_manager', 'technical_contact', 'team_manager').prefetch_related('authorized_users')
     prod = get_object_or_404(prod_query, id=pid)
-    auth = request.user.is_staff or request.user in prod.authorized_users.all()
-    if not auth:
-        # will render 403
-        raise PermissionDenied
+    authorize_product_or_403(request.user, prod)
+
     langSummary = Languages.objects.filter(product=prod).aggregate(Sum('files'), Sum('code'), Count('files'))
     languages = Languages.objects.filter(product=prod).order_by('-code')
     app_analysis = App_Analysis.objects.filter(product=prod).order_by('name')
@@ -164,12 +161,13 @@ def view_product(request, pid):
                   'app_analysis': app_analysis,
                   'system_settings': system_settings,
                   'benchmarks_percents': benchAndPercent,
-                  'benchmarks': benchmarks,
-                  'authorized': auth})
+                  'benchmarks': benchmarks})
 
 
 def view_product_metrics(request, pid):
     prod = get_object_or_404(Product, id=pid)
+    authorize_product_or_403(request.user, prod)
+
     engs = Engagement.objects.filter(product=prod, active=True)
 
     result = EngagementFilter(
@@ -179,11 +177,6 @@ def view_product_metrics(request, pid):
     i_engs_page = get_page_items(request, result.qs, 10)
 
     scan_sets = ScanSettings.objects.filter(product=prod)
-    auth = request.user.is_staff or request.user in prod.authorized_users.all()
-
-    if not auth:
-        # will render 403
-        raise PermissionDenied
 
     ct = ContentType.objects.get_for_model(prod)
     product_cf = CustomField.objects.filter(content_type=ct)
@@ -401,15 +394,12 @@ def view_product_metrics(request, pid):
                    'high_weekly': high_weekly,
                    'medium_weekly': medium_weekly,
                    'test_data': test_data,
-                   'user': request.user,
-                   'authorized': auth})
+                   'user': request.user})
 
 
 def view_engagements(request, pid, engagement_type="Interactive"):
     prod = get_object_or_404(Product, id=pid)
-    auth = request.user.is_staff or request.user in prod.authorized_users.all()
-    if not auth:
-        raise PermissionDenied
+    authorize_product_or_403(request.user, prod)
 
     default_page_num = 10
 
@@ -449,7 +439,7 @@ def view_engagements(request, pid, engagement_type="Interactive"):
                    'i_engs': result_inactive_engs_page,
                    'i_engs_count': result_inactive_engs_page.paginator.count,
                    'user': request.user,
-                   'authorized': auth})
+                   'authorized': True})
 
 
 def prefetch_for_view_engagements(engs):
@@ -720,10 +710,8 @@ def delete_product(request, pid):
 
 def all_product_findings(request, pid):
     p = get_object_or_404(Product, id=pid)
-    auth = request.user.is_staff or request.user in p.authorized_users.all()
-    if not auth:
-        # will render 403
-        raise PermissionDenied
+    authorize_product_or_403(request.user, p)
+
     result = ProductFindingFilter(
         request.GET,
         queryset=Finding.objects.filter(test__engagement__product=p,

@@ -90,9 +90,7 @@ def simple_search(request):
             else:
                 if "finding" in search_operator or search_operator == "":
                     findings = watson.search(clean_query, models=(
-                        Finding.objects.filter(
-                            test__engagement__product__authorized_users__in=[
-                                request.user]),))
+                        Finding.objects.auth(request.user),))
 
                 if "template" in search_operator or search_operator == "":
                     finding_templates = watson.search(clean_query, models=(Finding_Template,))
@@ -100,35 +98,25 @@ def simple_search(request):
                 if "test" in search_operator or search_operator == "":
                     tests = watson.search(
                         clean_query,
-                        models=(Test.objects.filter(
-                            engagement__product__authorized_users__in=[
-                                request.user]),))
+                        models=(Test.objects.auth(request.user),))
 
                 if "product" in search_operator or search_operator == "":
                     products = watson.search(clean_query, models=(
-                        Product.objects.filter(authorized_users__in=[
-                            request.user]),))
+                        Product.objects.auth(request.user),))
 
                 if "tag" in search_operator or search_operator == "":
                     tagged_findings = TaggedItem.objects.get_by_model(
-                        Finding.objects.filter(
-                            test__engagement__product__authorized_users__in=[
-                                request.user]), tags)
+                        Finding.objects.auth(request.user), tags)
                     tagged_finding_templates = TaggedItem.objects.get_by_model(Finding_Template,
                                                                                tags)
                     tagged_tests = TaggedItem.objects.get_by_model(
-                        Test.objects.filter(
-                            engagement__product__authorized_users__in=[
-                                request.user]), tags)
+                        Test.objects.auth(request.user), tags)
                     tagged_products = TaggedItem.objects.get_by_model(
-                        Product.objects.filter(
-                            authorized_users__in=[request.user]), tags)
+                        Product.objects.auth(request.user), tags)
                     tagged_endpoints = TaggedItem.objects.get_by_model(
-                        Endpoint.objects.filter(
-                            product__authorized_users__in=[request.user]), tags)
+                        Endpoint.objects.auth(request.user), tags)
                     tagged_engagements = TaggedItem.objects.get_by_model(
-                        Engagement.objects.filter(
-                            product__authorized_users__in=[request.user]), tags)
+                        Engagement.objects.auth(request.user), tags)
 
             if findings:
                 findings = findings.prefetch_related('object', 'object__test', 'object__test__engagement', 'object__test__engagement__product',

@@ -19,6 +19,7 @@ from time import strftime
 from django.contrib.admin.utils import NestedObjects
 from django.db import DEFAULT_DB_ALIAS
 
+from dojo.authorization import authorize_product_or_403
 from dojo.engagement.services import close_engagement, reopen_engagement
 from dojo.filters import EngagementFilter
 from dojo.forms import CheckForm, \
@@ -42,8 +43,7 @@ parse_logger = logging.getLogger('dojo')
 
 
 def authorize_general_or_403(user: AbstractUser, engagement: Engagement) -> None:
-    if not (user.is_staff or engagement.product.authorized_users.filter(pk=user.pk).exists()):
-        raise PermissionDenied()
+    authorize_product_or_403(user, engagement.product)
 
 
 @user_passes_test(lambda u: u.is_staff)
@@ -304,9 +304,9 @@ def delete_engagement(request, eid):
 
 def view_engagement(request, eid):
     eng = get_object_or_404(Engagement, id=eid)
+    authorize_general_or_403(request.user, eng)
+
     tests = Test.objects.filter(engagement=eng).order_by('test_type__name', '-updated')
-    prod = eng.product
-    auth = request.user.is_staff or request.user in prod.authorized_users.all()
     risks_accepted = eng.risk_acceptance.all()
     preset_test_type = None
     network = None
@@ -314,9 +314,6 @@ def view_engagement(request, eid):
         preset_test_type = eng.preset.test_type.all()
         network = eng.preset.network_locations.all()
     system_settings = System_Settings.objects.get()
-    if not auth:
-        # will render 403
-        raise PermissionDenied
 
     try:
         jissue = JIRA_Issue.objects.get(engagement=eng)
@@ -389,7 +386,7 @@ def view_engagement(request, eid):
     title = ""
     if eng.engagement_type == "CI/CD":
         title = " CI/CD"
-    product_tab = Product_Tab(prod.id, title="View" + title + " Engagement", tab="engagements")
+    product_tab = Product_Tab(eng.product.id, title="View" + title + " Engagement", tab="engagements")
     product_tab.setEngagement(eng)
     return render(
         request, 'dojo/view_eng.html', {

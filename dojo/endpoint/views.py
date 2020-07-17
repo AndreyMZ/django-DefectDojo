@@ -5,7 +5,6 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from django.contrib import messages
 from django.contrib.auth.decorators import user_passes_test
-from django.core.exceptions import PermissionDenied
 from django.urls import reverse
 from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import render, get_object_or_404
@@ -13,6 +12,8 @@ from django.utils.html import escape
 from django.utils import timezone
 from django.contrib.admin.utils import NestedObjects
 from django.db import DEFAULT_DB_ALIAS
+
+from dojo.authorization import authorize_product_or_403
 from dojo.filters import EndpointFilter
 from dojo.forms import EditEndpointForm, \
     DeleteEndpointForm, AddEndpointForm, DojoMetaDataForm
@@ -23,18 +24,10 @@ logger = logging.getLogger(__name__)
 
 
 def vulnerable_endpoints(request):
-    endpoints = Endpoint.objects.filter(finding__active=True, finding__verified=True, finding__false_p=False,
-                                        finding__duplicate=False, finding__out_of_scope=False, remediated=False).distinct()
-
-    # are they authorized
-    if request.user.is_staff:
-        pass
-    else:
-        products = Product.objects.filter(authorized_users__in=[request.user])
-        if products.exists():
-            endpoints = endpoints.filter(product__in=products.all())
-        else:
-            raise PermissionDenied
+    endpoints = Endpoint.objects.auth(request.user)\
+        .filter(finding__active=True, finding__verified=True, finding__false_p=False,
+                finding__duplicate=False, finding__out_of_scope=False, remediated=False)\
+        .distinct()
 
     product = None
     if 'product' in request.GET:
@@ -64,17 +57,9 @@ def vulnerable_endpoints(request):
 
 
 def all_endpoints(request):
-    endpoints = Endpoint.objects.all()
+    endpoints = Endpoint.objects.auth(request.user)
+
     show_uri = get_system_setting('display_endpoint_uri')
-    # are they authorized
-    if request.user.is_staff:
-        pass
-    else:
-        products = Product.objects.filter(authorized_users__in=[request.user])
-        if products.exists():
-            endpoints = endpoints.filter(product__in=products.all())
-        else:
-            raise PermissionDenied
 
     product = None
     if 'product' in request.GET:
@@ -126,14 +111,11 @@ def get_endpoint_ids(endpoints):
 
 def view_endpoint(request, eid):
     endpoint = get_object_or_404(Endpoint, id=eid)
+    authorize_product_or_403(request.user, endpoint.product)
+
     host = endpoint.host_no_port
     endpoints = Endpoint.objects.filter(host__regex="^" + host + ":?",
                                         product=endpoint.product).distinct()
-
-    if (request.user in endpoint.product.authorized_users.all()) or request.user.is_staff:
-        pass
-    else:
-        raise PermissionDenied
 
     endpoint_metadata = dict(endpoint.endpoint_meta.values_list('name', 'value'))
 
