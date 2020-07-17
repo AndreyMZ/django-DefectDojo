@@ -181,7 +181,7 @@ class ProductForm(forms.ModelForm):
                                        required=True)
 
     authorized_users = forms.ModelMultipleChoiceField(
-        queryset=None,
+        queryset=User.objects.exclude(is_staff=True).exclude(is_active=False),
         required=False, label="Authorized Users")
 
     authorized_groups = forms.ModelMultipleChoiceField(
@@ -189,13 +189,9 @@ class ProductForm(forms.ModelForm):
         required=False, label="Authorized Groups")
 
     def __init__(self, *args, **kwargs):
-        non_staff = User.objects.exclude(is_staff=True) \
-            .exclude(is_active=False)
-        tags = Tag.objects.usage_for_model(Product)
-        t = [(tag.name, tag.name) for tag in tags]
         super(ProductForm, self).__init__(*args, **kwargs)
-        self.fields['authorized_users'].queryset = non_staff
-        self.fields['tags'].widget.choices = t
+        tags = Tag.objects.usage_for_model(Product)
+        self.fields['tags'].widget.choices = [(tag.name, tag.name) for tag in tags]
 
     class Meta:
         model = Product
@@ -274,7 +270,7 @@ class Product_TypeProductForm(forms.ModelForm):
                            help_text="Add tags that help describe this product.  "
                                      "Choose from the list or add new tags.  Press TAB key to add.")
     authorized_users = forms.ModelMultipleChoiceField(
-        queryset=None,
+        queryset=User.objects.exclude(is_staff=True).exclude(is_active=False),
         required=False, label="Authorized Users")
 
     authorized_groups = forms.ModelMultipleChoiceField(
@@ -286,13 +282,9 @@ class Product_TypeProductForm(forms.ModelForm):
                                        required=True)
 
     def __init__(self, *args, **kwargs):
-        non_staff = User.objects.exclude(is_staff=True) \
-            .exclude(is_active=False)
-        tags = Tag.objects.usage_for_model(Product)
-        t = [(tag.name, tag.name) for tag in tags]
         super(Product_TypeProductForm, self).__init__(*args, **kwargs)
-        self.fields['authorized_users'].queryset = non_staff
-        self.fields['tags'].widget.choices = t
+        tags = Tag.objects.usage_for_model(Product)
+        self.fields['tags'].widget.choices = [(tag.name, tag.name) for tag in tags]
 
     class Meta:
         model = Product
