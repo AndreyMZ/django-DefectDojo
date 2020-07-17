@@ -79,7 +79,7 @@ def verified_findings(request, pid=None, eid=None):
 
 
 def out_of_scope_findings(request, pid=None, eid=None):
-    findings = Finding.objects.auth(request.user).filter(active=False, out_of_scope=True)
+    findings = Finding.objects.auth(request.user).filter(active=False, duplicate=False, out_of_scope=True)
     return _findings(request, pid, eid, findings, "Out of scope")
 
 
@@ -99,7 +99,7 @@ def open_findings(request, pid=None, eid=None, view=None):
         findings = Finding.objects.auth(request.user)
     else:
         filter_name = "Open"
-        findings = Finding.objects.auth(request.user).filter(active=True, duplicate=False)
+        findings = Finding.objects.auth(request.user).filter(active=True)
     return _findings(request, pid, eid, findings, filter_name)
 
 
