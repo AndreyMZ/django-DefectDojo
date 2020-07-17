@@ -101,7 +101,7 @@ def iso_to_gregorian(iso_year, iso_week, iso_day):
 
 
 def view_product(request, pid):
-    prod_query = Product.objects.all().select_related('product_manager', 'technical_contact', 'team_manager').prefetch_related('authorized_users')
+    prod_query = Product.objects.all().select_related('product_manager', 'technical_contact', 'team_manager').prefetch_related('authorized_users', 'authorized_groups')
     prod = get_object_or_404(prod_query, id=pid)
     authorize_product_or_403(request.user, prod)
 
@@ -634,8 +634,7 @@ def edit_product(request, pid):
             return HttpResponseRedirect(reverse('view_product', args=(pid,)))
     else:
         form = ProductForm(instance=prod,
-                           initial={'auth_users': prod.authorized_users.all(),
-                                    'tags': get_tag_list(Tag.objects.get_for_object(prod))})
+                           initial={'tags': get_tag_list(Tag.objects.get_for_object(prod))})
 
         if jira_enabled and (jira_inst is not None):
             if jira_inst is not None:

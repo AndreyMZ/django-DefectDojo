@@ -309,6 +309,18 @@
               {% endif %}
             </td>
           </tr>
+          <tr>
+            <td><strong>Authorized Groups</strong></td>
+            <td>
+              {% if prod.authorized_groups.exists %}
+                {% for ag in prod.authorized_groups.all %}
+                  {{ag}}{%if not forloop.last%},{%endif%}
+                {% endfor %}
+              {% else %}
+                {{ ""|notspecified }}
+              {% endif %}
+            </td>
+          </tr>
         </tbody>
       </table>
     </div>

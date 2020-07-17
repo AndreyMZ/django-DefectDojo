@@ -6,6 +6,7 @@ from urllib.parse import urlsplit, urlunsplit
 
 from dateutil.relativedelta import relativedelta
 from django import forms
+from django.contrib.auth.models import Group
 from django.core import validators
 from django.core.validators import RegexValidator, URLValidator, validate_ipv46_address
 from django.core.exceptions import ValidationError
@@ -183,6 +184,10 @@ class ProductForm(forms.ModelForm):
         queryset=None,
         required=False, label="Authorized Users")
 
+    authorized_groups = forms.ModelMultipleChoiceField(
+        queryset=Group.objects.all(),
+        required=False, label="Authorized Groups")
+
     def __init__(self, *args, **kwargs):
         non_staff = User.objects.exclude(is_staff=True) \
             .exclude(is_active=False)
@@ -195,7 +200,7 @@ class ProductForm(forms.ModelForm):
     class Meta:
         model = Product
         fields = ['name', 'description', 'tags', 'product_manager', 'technical_contact', 'team_manager', 'prod_type', 'regulations',
-                  'authorized_users', 'business_criticality', 'platform', 'lifecycle', 'origin', 'user_records', 'revenue', 'external_audience', 'internet_accessible']
+                  'authorized_users', 'authorized_groups', 'business_criticality', 'platform', 'lifecycle', 'origin', 'user_records', 'revenue', 'external_audience', 'internet_accessible']
 
 
 class DeleteProductForm(forms.ModelForm):
@@ -205,7 +210,7 @@ class DeleteProductForm(forms.ModelForm):
     class Meta:
         model = Product
         exclude = ['name', 'description', 'prod_manager', 'tech_contact', 'manager', 'created',
-                   'prod_type', 'updated', 'tid', 'authorized_users', 'product_manager',
+                   'prod_type', 'updated', 'tid', 'authorized_users', 'authorized_groups', 'product_manager',
                    'technical_contact', 'team_manager', 'prod_numeric_grade', 'business_criticality',
                    'platform', 'lifecycle', 'origin', 'user_records', 'revenue', 'external_audience',
                    'internet_accessible', 'regulations', 'product_meta']
@@ -271,6 +276,11 @@ class Product_TypeProductForm(forms.ModelForm):
     authorized_users = forms.ModelMultipleChoiceField(
         queryset=None,
         required=False, label="Authorized Users")
+
+    authorized_groups = forms.ModelMultipleChoiceField(
+        queryset=Group.objects.all(),
+        required=False, label="Authorized Groups")
+
     prod_type = forms.ModelChoiceField(label='Product Type',
                                        queryset=Product_Type.objects.all().order_by('name'),
                                        required=True)
@@ -287,7 +297,7 @@ class Product_TypeProductForm(forms.ModelForm):
     class Meta:
         model = Product
         fields = ['name', 'description', 'tags', 'product_manager', 'technical_contact', 'team_manager', 'prod_type', 'regulations',
-                  'authorized_users', 'business_criticality', 'platform', 'lifecycle', 'origin', 'user_records', 'revenue', 'external_audience', 'internet_accessible']
+                  'authorized_users', 'authorized_groups', 'business_criticality', 'platform', 'lifecycle', 'origin', 'user_records', 'revenue', 'external_audience', 'internet_accessible']
 
 
 class ImportScanForm(forms.Form):
