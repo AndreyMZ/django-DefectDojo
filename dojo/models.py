@@ -2951,7 +2951,7 @@ admin.site.register(Sonarqube_Product)
 
 
 def authorize_products_in_qs(user: Optional[User], queryset: QuerySet, product_lookup: Optional[str] = None) -> QuerySet:
-    if user is None:
+    if (user is None) or (not user.is_active):
         return queryset.none()
     elif user.is_staff:
         return queryset
