@@ -398,7 +398,7 @@ class Product_Type(models.Model):
 
     class Manager(DojoManager):
         def auth(self, user: Optional[User]) -> QuerySet:
-            return authorize_products_in_qs(user, self.get_queryset(), 'prod_type')
+            return authorize_products_in_qs(user, self.get_queryset(), 'prod_type').distinct()
 
     objects = Manager()
 
