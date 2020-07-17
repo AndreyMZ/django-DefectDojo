@@ -1431,7 +1431,6 @@ class Finding(models.Model):
 
     line_number = models.CharField(null=True, blank=True, max_length=200,
                                    editable=False)  # Deprecated will be removed, use line
-    sourcefile = models.TextField(null=True, blank=True, editable=False)
     param = models.TextField(null=True, blank=True, editable=False)
     payload = models.TextField(null=True, blank=True, editable=False)
     hash_code = models.TextField(null=True, blank=True, editable=False)
