@@ -707,27 +707,6 @@ def delete_product(request, pid):
                    })
 
 
-def all_product_findings(request, pid):
-    p = get_object_or_404(Product, id=pid)
-    authorize_product_or_403(request.user, p)
-
-    result = ProductFindingFilter(
-        request.GET,
-        queryset=Finding.objects.filter(test__engagement__product=p,
-                                        active=True))
-    page = get_page_items(request, result.qs, 25)
-
-    add_breadcrumb(title="Open findings", top_level=False, request=request)
-
-    return render(request,
-                  "dojo/all_product_findings.html",
-                  {"findings": page,
-                   "product": p,
-                   "filtered": result,
-                   "user": request.user,
-                   })
-
-
 @user_passes_test(lambda u: u.is_staff)
 def new_eng_for_app(request, pid, cicd=False):
     jform = None
