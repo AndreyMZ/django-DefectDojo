@@ -47,7 +47,13 @@ class EndPointViewSet(mixins.ListModelMixin,
     serializer_class = serializers.EndpointSerializer
     queryset = Endpoint.objects.all()
     filter_backends = (DjangoFilterBackend,)
-    filter_fields = ('id', 'host', 'product')
+    filter_fields = {
+        'id': ['exact'],
+        'protocol': ['exact', 'isnull'],
+        'host': ['exact', 'isnull'],
+        'path': ['exact', 'isnull'],
+        'product': ['exact'],
+    }
 
     def get_queryset(self):
         if not self.request.user.is_staff:
