@@ -3,3 +3,4 @@
 *.md
 .env*
 **/local_settings.py
+/dojo/migrations/
