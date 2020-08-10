@@ -331,7 +331,6 @@ class OpenFindingFilter(DojoFilter):
     title = CharFilter(lookup_expr='icontains')
     duplicate = ReportBooleanFilter()
     # sourcefile = CharFilter(lookup_expr='icontains')
-    sourcefilepath = CharFilter(lookup_expr='icontains')
     param = CharFilter(lookup_expr='icontains')
     payload = CharFilter(lookup_expr='icontains')
     date = DateRangeFilter()
@@ -402,7 +401,6 @@ class OpenFingingSuperFilter(OpenFindingFilter):
 class ClosedFindingFilter(DojoFilter):
     title = CharFilter(lookup_expr='icontains')
     sourcefile = CharFilter(lookup_expr='icontains')
-    sourcefilepath = CharFilter(lookup_expr='icontains')
     param = CharFilter(lookup_expr='icontains')
     payload = CharFilter(lookup_expr='icontains')
     mitigated = DateRangeFilter(label="Mitigated Date")
@@ -465,7 +463,6 @@ class ClosedFingingSuperFilter(ClosedFindingFilter):
 class AcceptedFindingFilter(DojoFilter):
     title = CharFilter(lookup_expr='icontains')
     sourcefile = CharFilter(lookup_expr='icontains')
-    sourcefilepath = CharFilter(lookup_expr='icontains')
     param = CharFilter(lookup_expr='icontains')
     payload = CharFilter(lookup_expr='icontains')
     test__engagement__risk_acceptance__created = \
@@ -533,7 +530,6 @@ class AcceptedFingingSuperFilter(AcceptedFindingFilter):
 class ProductFindingFilter(DojoFilter):
     title = CharFilter(lookup_expr='icontains')
     sourcefile = CharFilter(lookup_expr='icontains')
-    sourcefilepath = CharFilter(lookup_expr='icontains')
     param = CharFilter(lookup_expr='icontains')
     payload = CharFilter(lookup_expr='icontains')
     date = DateRangeFilter()
