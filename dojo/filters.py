@@ -330,6 +330,8 @@ class ProductFilter(DojoFilter):
 class OpenFindingFilter(DojoFilter):
     title = CharFilter(lookup_expr='icontains')
     duplicate = ReportBooleanFilter()
+    # sourcefile = CharFilter(lookup_expr='icontains')
+    sourcefilepath = CharFilter(lookup_expr='icontains')
     param = CharFilter(lookup_expr='icontains')
     payload = CharFilter(lookup_expr='icontains')
     date = DateRangeFilter()
@@ -367,7 +369,7 @@ class OpenFindingFilter(DojoFilter):
                    'thread_id', 'notes', 'scanner_confidence', 'mitigated',
                    'numerical_severity', 'reporter', 'last_reviewed', 'line',
                    'duplicate_finding', 'hash_code', 'images',
-                   'line_number', 'reviewers', 'mitigated_by', 'jira_creation', 'jira_change']
+                   'line_number', 'reviewers', 'mitigated_by', 'sourcefile', 'jira_creation', 'jira_change']
 
     def __init__(self, *args, **kwargs):
         self.pid = kwargs.pop('pid', None)
@@ -399,6 +401,8 @@ class OpenFingingSuperFilter(OpenFindingFilter):
 
 class ClosedFindingFilter(DojoFilter):
     title = CharFilter(lookup_expr='icontains')
+    sourcefile = CharFilter(lookup_expr='icontains')
+    sourcefilepath = CharFilter(lookup_expr='icontains')
     param = CharFilter(lookup_expr='icontains')
     payload = CharFilter(lookup_expr='icontains')
     mitigated = DateRangeFilter(label="Mitigated Date")
@@ -460,6 +464,8 @@ class ClosedFingingSuperFilter(ClosedFindingFilter):
 
 class AcceptedFindingFilter(DojoFilter):
     title = CharFilter(lookup_expr='icontains')
+    sourcefile = CharFilter(lookup_expr='icontains')
+    sourcefilepath = CharFilter(lookup_expr='icontains')
     param = CharFilter(lookup_expr='icontains')
     payload = CharFilter(lookup_expr='icontains')
     test__engagement__risk_acceptance__created = \
@@ -526,6 +532,8 @@ class AcceptedFingingSuperFilter(AcceptedFindingFilter):
 
 class ProductFindingFilter(DojoFilter):
     title = CharFilter(lookup_expr='icontains')
+    sourcefile = CharFilter(lookup_expr='icontains')
+    sourcefilepath = CharFilter(lookup_expr='icontains')
     param = CharFilter(lookup_expr='icontains')
     payload = CharFilter(lookup_expr='icontains')
     date = DateRangeFilter()

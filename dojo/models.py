@@ -1069,6 +1069,9 @@ class Endpoint(models.Model):
     host = models.CharField(null=True, blank=True, max_length=500,
                             help_text="The host name or IP address, you can also include the port number. For example"
                                       "'127.0.0.1', '127.0.0.1:8080', 'localhost', 'yourdomain.com'.")
+    fqdn = models.CharField(null=True, blank=True, max_length=500)
+    port = models.IntegerField(null=True, blank=True,
+                               help_text="The network port associated with the endpoint.")
     path = models.CharField(null=True, blank=True, max_length=500,
                             help_text="The location of the resource, it should start with a '/'. For example"
                                       "/endpoint/420/edit")
@@ -1099,10 +1102,16 @@ class Endpoint(models.Model):
         from urllib.parse import uses_netloc
 
         netloc = self.host
+        port = self.port
         scheme = self.protocol
         url = self.path if self.path else ''
         query = self.query
         fragment = self.fragment
+
+        if port:
+            # If http or https on standard ports then don't tack on the port number
+            if (port != 443 and scheme == "https") or (port != 80 and scheme == "http"):
+                netloc += ':%s' % port
 
         if netloc or (scheme and scheme in uses_netloc and url[:2] != '//'):
             if url and url[:1] != '/':
@@ -1123,10 +1132,16 @@ class Endpoint(models.Model):
         from urllib.parse import uses_netloc
 
         netloc = self.host
+        port = self.port
         scheme = self.protocol
         url = self.path if self.path else ''
         query = self.query
         fragment = self.fragment
+
+        if port:
+            # If http or https on standard ports then don't tack on the port number
+            if (port != 443 and scheme == "https") or (port != 80 and scheme == "http"):
+                netloc += ':%s' % port
 
         if netloc or (scheme and scheme in uses_netloc and url[:2] != '//'):
             if url and url[:1] != '/':
@@ -1431,6 +1446,8 @@ class Finding(models.Model):
 
     line_number = models.CharField(null=True, blank=True, max_length=200,
                                    editable=False)  # Deprecated will be removed, use line
+    sourcefilepath = models.TextField(null=True, blank=True, editable=False)  # Not used? to remove
+    sourcefile = models.TextField(null=True, blank=True, editable=False)
     param = models.TextField(null=True, blank=True, editable=False)
     payload = models.TextField(null=True, blank=True, editable=False)
     hash_code = models.TextField(null=True, blank=True, editable=False)
