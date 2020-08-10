@@ -1476,11 +1476,7 @@ class Product_Tab():
         self.engagement_count = Engagement.objects.filter(
             product=self.product, active=True).count()
         self.open_findings_count = Finding.objects.filter(test__engagement__product=self.product,
-                                                          false_p=False,
-                                                          duplicate=False,
-                                                          out_of_scope=False,
-                                                          active=True,
-                                                          mitigated__isnull=True).count()
+                                                          active=True).count()
         self.endpoints_count = Endpoint.objects.filter(
             product=self.product).count()
         self.benchmark_type = Benchmark_Type.objects.filter(
