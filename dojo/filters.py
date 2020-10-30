@@ -10,7 +10,7 @@ import six
 from django.utils.translation import ugettext_lazy as _
 from django_filters import FilterSet, CharFilter, OrderingFilter, \
     ModelMultipleChoiceFilter, ModelChoiceFilter, MultipleChoiceFilter, \
-    BooleanFilter, NumberFilter, DateFilter
+    BooleanFilter, NumberFilter, DateFilter, IsoDateTimeFromToRangeFilter
 from django_filters import rest_framework as filters
 from django_filters.filters import ChoiceFilter, _truncate, DateTimeFilter
 import pytz
@@ -763,6 +763,9 @@ class ApiFindingFilter(DojoFilter):
     sourcefilepath = CharFilter(lookup_expr='icontains')
     unique_id_from_tool = CharFilter(lookup_expr='icontains')
     title = CharFilter(lookup_expr='icontains')
+    # IsoDateTimeFromToRangeFilter
+    test__target_start = IsoDateTimeFromToRangeFilter()
+    test__target_end = IsoDateTimeFromToRangeFilter()
     # DateRangeFilter
     created = DateRangeFilter()
     date = DateRangeFilter()
