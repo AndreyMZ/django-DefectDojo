@@ -1007,7 +1007,7 @@ class ApiFindingFilter(DojoFilter):
     cve = CharFilter(method=custom_filter, field_name='cve')
     description = CharFilter(lookup_expr='icontains')
     file_path = CharFilter(lookup_expr='icontains')
-    hash_code = CharFilter(lookup_expr='icontains')
+    hash_code = CharFilter(lookup_expr='exact')
     impact = CharFilter(lookup_expr='icontains')
     mitigation = CharFilter(lookup_expr='icontains')
     numerical_severity = CharFilter(method=custom_filter, field_name='numerical_severity')
@@ -1019,7 +1019,7 @@ class ApiFindingFilter(DojoFilter):
     step_to_reproduce = CharFilter(lookup_expr='icontains')
     sourcefile = CharFilter(lookup_expr='icontains')
     sourcefilepath = CharFilter(lookup_expr='icontains')
-    unique_id_from_tool = CharFilter(lookup_expr='icontains')
+    unique_id_from_tool = CharFilter(lookup_expr='exact')
     title = CharFilter(lookup_expr='icontains')
     # IsoDateTimeFromToRangeFilter
     test__target_start = IsoDateTimeFromToRangeFilter()
