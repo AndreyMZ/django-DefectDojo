@@ -656,15 +656,6 @@ def edit_finding(request, fid):
             new_finding.test = finding.test
             new_finding.numerical_severity = Finding.get_numerical_severity(
                 new_finding.severity)
-            if new_finding.false_p or new_finding.active is False:
-                new_finding.mitigated = timezone.now()
-                new_finding.mitigated_by = request.user
-                new_finding.is_Mitigated = True
-            if new_finding.active is True:
-                new_finding.false_p = False
-                new_finding.mitigated = None
-                new_finding.mitigated_by = None
-                new_finding.is_Mitigated = False
             if not new_finding.duplicate:
                 logger.debug('resetting duplicate status for %i', new_finding.id)
                 new_finding.duplicate = False
