@@ -534,7 +534,7 @@ class ApiProductFilter(DojoFilter):
     external_audience = BooleanFilter(field_name='external_audience')
     internet_accessible = BooleanFilter(field_name='internet_accessible')
     # CharFilter
-    name = CharFilter(lookup_expr='icontains')
+    name = CharFilter(lookup_expr='exact')
     description = CharFilter(lookup_expr='icontains')
     business_criticality = CharFilter(method=custom_filter, field_name='business_criticality')
     platform = CharFilter(method=custom_filter, field_name='platform')
