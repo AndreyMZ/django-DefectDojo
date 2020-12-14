@@ -59,7 +59,7 @@ class EndPointViewSet(mixins.ListModelMixin,
             return Endpoint.objects.filter(
                 Q(product__authorized_users__in=[self.request.user]) |
                 Q(product__prod_type__authorized_users__in=[self.request.user])
-            )
+            ).distinct()
         else:
             return Endpoint.objects.all()
 
@@ -122,7 +122,7 @@ class EngagementViewSet(mixins.ListModelMixin,
             return Engagement.objects.filter(
                 Q(product__authorized_users__in=[self.request.user]) |
                 Q(product__prod_type__authorized_users__in=[self.request.user])
-            )
+            ).distinct()
         else:
             return Engagement.objects.all()
 
@@ -874,7 +874,7 @@ class ProductViewSet(prefetch.PrefetchListMixin,
             return self.queryset.filter(
                 Q(authorized_users__in=[self.request.user]) |
                 Q(prod_type__authorized_users__in=[self.request.user])
-            )
+            ).distinct()
         else:
             return self.queryset
 
