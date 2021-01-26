@@ -26,7 +26,6 @@ from django.views.decorators.http import require_POST
 from itertools import chain
 from dojo.user.helper import user_must_be_authorized
 from dojo.utils import close_external_issue, reopen_external_issue
-import copy
 
 from dojo.filters import OpenFindingFilter, \
     OpenFindingSuperFilter, AcceptedFindingSuperFilter, \
@@ -629,7 +628,6 @@ def edit_finding(request, fid):
     # finding = finding._detag_to_serializable()
     # finding = finding._retag_to_original()
     old_status = finding.status()
-    old_finding = copy.copy(finding)
     burp_rr = BurpRawRequestResponse.objects.filter(finding=finding).first()
     if burp_rr:
         req_resp = (
@@ -687,7 +685,7 @@ def edit_finding(request, fid):
             new_finding.test = finding.test
             new_finding.numerical_severity = Finding.get_numerical_severity(
                 new_finding.severity)
-            finding_helper.update_finding_status(new_finding, request.user, old_state_finding=old_finding)
+            finding_helper.update_finding_status(new_finding, request.user)
 
             if form['simple_risk_accept'].value():
                 new_finding.simple_risk_accept()
