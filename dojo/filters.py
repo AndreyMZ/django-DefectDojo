@@ -1600,7 +1600,13 @@ class ApiEndpointFilter(DojoFilter):
 
     class Meta:
         model = Endpoint
-        fields = ['id', 'host', 'product']
+        fields = {
+            'id': ['exact'],
+            'protocol': ['exact', 'isnull'],
+            'host': ['exact', 'isnull'],
+            'path': ['exact', 'isnull'],
+            'product': ['exact'],
+        }
 
 
 class ApiTestFilter(DojoFilter):
