@@ -183,31 +183,18 @@
                                 </a>
                             </li>
                             <li>
-                                {% if request.user.is_staff %}
-                                    <a href="{% url 'product' %}" aria-expanded="false" aria-label="Products">
-                                        <i class="fa fa-list fa-fw"></i>
-                                        <span>Products</span>
-                                        <span class="glyphicon arrow"></span>
-                                    </a>
-                                {% elif request.user.is_authenticated %}
-                                <a href="{% url 'product' %}" title="Products" aria-label="Products"><i class="fa fa-list fa-fw"></i><span>Products</span></a>
-                                {% endif %}
-                                {% if request.user.is_staff %}
-                                    <ul class="nav nav-second-level">
-                                      {% if request.user.is_staff %}
-                                        <li>
-                                            <a href="{% url 'new_product' %}"> Add Product</a>
-                                        </li>
-                                      {% endif %}
-                                        <li>
-                                            <a href="{% url 'product' %}"> All Products</a>
-                                        </li>
-                                        <li>
-                                            <a href="{% url 'product_type' %}">View Product Types</a>
-                                        </li>
-
-                                    </ul>
-                                {% endif %}
+                                <a href="{% url 'product' %}" aria-expanded="false" aria-label="Products">
+                                    <i class="fa fa-list fa-fw"></i>
+                                    <span>Products</span>
+                                    <span class="glyphicon arrow"></span>
+                                </a>
+                                <ul class="nav nav-second-level">
+                                    <li><a href="{% url 'product' %}"> All Products</a></li>
+                                    {% if request.user.is_staff %}
+                                        <li><a href="{% url 'new_product' %}"> Add Product</a></li>
+                                    {% endif %}
+                                    <li><a href="{% url 'product_type' %}">View Product Types</a></li>
+                                </ul>
                                 <!-- /.nav-second-level -->
                             </li>
                             {% if request.user.is_staff %}
@@ -307,6 +294,7 @@
                                     <span class="glyphicon arrow"></span>
                                 </a>
                                 <ul class="nav nav-second-level">
+                                    <li><a href="{% url 'metrics' %}?date=5&view=dashboard"> Metrics Dashboard </a></li>
                                     <li><a href="{% url 'critical_product_metrics' %}"> Critical Product Metrics </a></li>
                                     <li><a href="{% url 'metrics_product_type' %}"> Product Type Metrics </a></li>
                                     <li><a href="{% url 'product_type_counts' %}"> Product Type Counts </a></li>
@@ -315,7 +303,6 @@
                                         <li><a href="{% url 'engineer_metrics' %}"> Engineer Metrics </a></li>
                                         <li><a href="{% url 'research_metrics' %}"> Security Research Metrics </a></li>
                                     {% endif %}
-                                    <li><a href="{% url 'metrics' %}?date=5&view=dashboard"> Metrics Dashboard </a></li>
                                 </ul>
                                 <!-- /.nav-second-level -->
                             </li>
