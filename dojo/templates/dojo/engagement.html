@@ -105,16 +105,8 @@
                     "{{word}}",
                 {% endfor %}
             ];
-            var engWords = [
-                {% for word in eng_words %}
-                    "{{word}}",
-                {% endfor %}
-            ];
             $("#id_name").autocomplete({
                 source: availableTags
-            });
-            $("#id_engagement__name").autocomplete({
-                source: engWords
             });
         });
     </script>
