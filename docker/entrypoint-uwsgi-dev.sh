@@ -19,4 +19,5 @@ exec uwsgi \
   --reload-mercy 1 \
   --worker-reload-mercy 1 \
   --py-autoreload 1 \
+  --http-timeout="${DD_UWSGI_HTTP_TIMEOUT:-30}" \
   --buffer-size="${DD_UWSGI_BUFFER_SIZE:-8192}"
