@@ -55,5 +55,5 @@ gitpython>=2.1.13
 ptvsd>=4.2.7
 google-api-python-client==1.7.11
 google-auth==1.6.3
-google-auth-oauthlib==0.3.0
+google-auth-oauthlib==0.4.4
 drf_yasg==1.17.0
