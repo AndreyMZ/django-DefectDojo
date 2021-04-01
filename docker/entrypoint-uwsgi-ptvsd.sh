@@ -18,4 +18,5 @@ exec uwsgi \
   --wsgi dojo.wsgi:application \
   --py-autoreload 1 \
   --enable-threads --lazy-apps --honour-stdin \
+  --http-timeout="${DD_UWSGI_HTTP_TIMEOUT:-30}" \
   --buffer-size="${DD_UWSGI_BUFFER_SIZE:-8192}"
