@@ -557,9 +557,9 @@ def reopen_finding(request, fid):
     finding = get_object_or_404(Finding, id=fid)
     finding.active = True
     finding.mitigated = None
-    finding.mitigated_by = request.user
+    finding.mitigated_by = None
     finding.is_Mitigated = False
-    finding.last_reviewed = finding.mitigated
+    finding.last_reviewed = timezone.now()
     finding.last_reviewed_by = request.user
     endpoint_status = finding.endpoint_status.all()
     for status in endpoint_status:
@@ -1853,23 +1853,18 @@ def finding_bulk_update_all(request, pid=None):
                 finds = prefetch_for_findings(finds)
                 if form.cleaned_data['severity'] or form.cleaned_data['status']:
                     for find in finds:
+                        find.last_reviewed = now
+                        find.last_reviewed_by = request.user
                         if form.cleaned_data['severity']:
                             find.severity = form.cleaned_data['severity']
                             find.numerical_severity = Finding.get_numerical_severity(form.cleaned_data['severity'])
-                            find.last_reviewed = now
-                            find.last_reviewed_by = request.user
-
                         if form.cleaned_data['status']:
-                            # logger.debug('setting status from bulk edit form: %s', form)
                             find.active = form.cleaned_data['active']
                             find.verified = form.cleaned_data['verified']
                             find.false_p = form.cleaned_data['false_p']
                             find.out_of_scope = form.cleaned_data['out_of_scope']
                             find.is_Mitigated = form.cleaned_data['is_Mitigated']
-                            find.last_reviewed = timezone.now()
-                            find.last_reviewed_by = request.user
 
-                        # use super to avoid all custom logic in our overriden save method
                         # it will trigger the pre_save signal
                         find.save_no_options()
 
