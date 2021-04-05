@@ -525,7 +525,6 @@ def add_temp_finding(request, tid, fid):
             new_finding.numerical_severity = Finding.get_numerical_severity(
                 new_finding.severity)
             new_finding.date = datetime.today()
-            finding_helper.update_finding_status(new_finding, request.user)
 
             create_template = new_finding.is_template
             # is template always False now in favor of new model Finding_Template
