@@ -1265,7 +1265,7 @@ class ToolProductSettingsViewSet(mixins.ListModelMixin,
     permission_classes = (IsAdminUser, DjangoModelPermissions)
 
 
-# Authorization: staff
+# Authorization: authenticated users
 class ToolTypesViewSet(mixins.ListModelMixin,
                        mixins.RetrieveModelMixin,
                        mixins.DestroyModelMixin,
@@ -1276,7 +1276,7 @@ class ToolTypesViewSet(mixins.ListModelMixin,
     queryset = Tool_Type.objects.all()
     filter_backends = (DjangoFilterBackend,)
     filter_fields = ('id', 'name', 'description')
-    permission_classes = (IsAdminUser, DjangoModelPermissions)
+    permission_classes = [DjangoModelPermissions]
 
 
 # Authorization: authenticated users
