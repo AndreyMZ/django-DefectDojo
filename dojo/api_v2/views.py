@@ -1776,7 +1776,6 @@ class TestImportViewSet(prefetch.PrefetchListMixin,
                                         'test__engagement__product__prod_type')
 
 
-# Authorization: superuser
 class ToolConfigurationsViewSet(mixins.ListModelMixin,
                                 mixins.RetrieveModelMixin,
                                 mixins.CreateModelMixin,
@@ -1787,7 +1786,7 @@ class ToolConfigurationsViewSet(mixins.ListModelMixin,
     queryset = Tool_Configuration.objects.all()
     filter_backends = (DjangoFilterBackend,)
     filter_fields = ('id', 'name', 'tool_type', 'url', 'authentication_type')
-    permission_classes = (permissions.IsSuperUser, DjangoModelPermissions)
+    permission_classes = [DjangoModelPermissions]
 
 
 # Authorization: staff
