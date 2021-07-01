@@ -17,7 +17,7 @@ deduplicationLogger = logging.getLogger("dojo.specific-loggers.deduplication")
 
 OPEN_FINDINGS_QUERY = Q(active=True)
 VERIFIED_FINDINGS_QUERY = Q(active=True, verified=True)
-OUT_OF_SCOPE_FINDINGS_QUERY = Q(active=False, out_of_scope=True)
+OUT_OF_SCOPE_FINDINGS_QUERY = Q(active=False, duplicate=False, out_of_scope=True)
 FALSE_POSITIVE_FINDINGS_QUERY = Q(active=False, duplicate=False, false_p=True)
 INACTIVE_FINDINGS_QUERY = Q(active=False, duplicate=False, is_mitigated=False, false_p=False, out_of_scope=False)
 ACCEPTED_FINDINGS_QUERY = Q(risk_accepted=True)
