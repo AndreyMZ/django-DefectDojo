@@ -2262,10 +2262,6 @@ class Finding(models.Model):
             from dojo.utils import get_current_user
             user = get_current_user()
 
-        # Title Casing
-        from titlecase import titlecase
-        self.title = titlecase(self.title[:511])
-
         # Assign the numerical severity for correct sorting order
         self.numerical_severity = Finding.get_numerical_severity(self.severity)
 
